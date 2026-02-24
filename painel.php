@@ -131,7 +131,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                             <i data-lucide="layout-dashboard" class="w-8 h-8 text-gray-400"></i>
                         </div>
                         <p class="text-lg font-medium text-gray-600 mb-1">Selecione um projeto</p>
-                        <p class="text-sm">Escolha um projeto na barra lateral para visualizar seus logs.</p>
+                        <p class="text-sm">Escolha um projeto na barra lateral para visualizar seus logs reais.</p>
                     </div>
                 </div>
             </div>
@@ -192,13 +192,18 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         const state = {
             currentProject: null,
             logs: [],
+            // Mapeados baseados nos prefixos reais dos arquivos lidos pela API
             projects: [
-                { id: 'supaco', name: 'Supaco', icon: 'database' },
-                { id: 'sema', name: 'SEMA', icon: 'leaf' },
-                { id: 'estagio_pdf', name: 'Estágio PDF', icon: 'file-text' },
-                { id: 'protocolo_sead', name: 'Protocolo SEAD', icon: 'inbox' },
-                { id: 'painel_cidadao', name: 'Painel do Cidadão', icon: 'users' },
-                { id: 'app_mobile', name: 'App Mobile', icon: 'smartphone' }
+                { id: 'all', name: 'Todos os Logs', icon: 'layers' },
+                { id: 'protocolosead_com', name: 'Protocolo SEAD', icon: 'file-text' },
+                { id: 'estagiopaudosferros_com', name: 'Estágio PDF', icon: 'graduation-cap' },
+                { id: 'sema_paudosferros', name: 'SEMA PDF', icon: 'leaf' },
+                { id: 'demutran_protocolosead_com', name: 'Demutran SEAD', icon: 'car' },
+                { id: 'demutranpaudosferros', name: 'Demutran PDF', icon: 'car' },
+                { id: 'suap2_estagiopaudosferros_com', name: 'SUAP 2', icon: 'library' },
+                { id: 'supaco_estagiopaudosferros_com', name: 'Supaco', icon: 'database' },
+                { id: 'api_estagiopaudosferros_com', name: 'API Estágio', icon: 'code' },
+                { id: 'api_protocolosead_com', name: 'API Protocolo', icon: 'code' },
             ]
         };
 
@@ -270,21 +275,20 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             DOM.iconRefresh.classList.add('animate-spin');
 
             try {
-                // Mock network delay
-                await new Promise(r => setTimeout(r, 600));
-                
                 const response = await fetch(`api/logs.php?project=${encodeURIComponent(state.currentProject)}`);
                 const data = await response.json();
                 
                 if (data.data) {
                     state.logs = data.data;
                     renderLogs();
+                } else if (data.error) {
+                    showError(data.error);
                 } else {
                     showError("Nenhum dado retornado da API.");
                 }
             } catch (error) {
                 console.error(error);
-                showError("Erro ao carregar os logs. Verifique sua conexão ou se o arquivo api/logs.php existe.");
+                showError("Erro ao carregar os logs. Verifique sua conexão ou a permissão da pasta raiz dos logs.");
             } finally {
                 DOM.iconRefresh.classList.remove('animate-spin');
             }
@@ -298,7 +302,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                             <i data-lucide="inbox" class="w-8 h-8 text-gray-400"></i>
                         </div>
                         <p class="text-lg font-medium text-gray-700 mb-1">Nenhum log encontrado</p>
-                        <p class="text-sm">Este projeto não possui arquivos de log no momento.</p>
+                        <p class="text-sm">Não há logs para este projeto no momento ou acesso negado no disco.</p>
                     </div>
                 `;
                 lucide.createIcons();
@@ -352,7 +356,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                     <div class="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
                         <div class="text-xs font-medium text-gray-500 flex items-center gap-1.5" title="${formatDate(log.modified)}">
                             <i data-lucide="clock" class="w-4 h-4 text-gray-400"></i>
-                            <span class="truncate">${formatDate(log.modified)}</span>
+                            <span class="truncate" style="max-width: 100px;">${formatDate(log.modified)}</span>
                         </div>
                         <button onclick="openModal('${encodeURIComponent(JSON.stringify(log))}')" class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-all flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg active:scale-95">
                             <span>Ver detalhes</span>
@@ -382,7 +386,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             try {
                 const log = JSON.parse(decodeURIComponent(logStrEnc));
                 DOM.modalTitle.textContent = log.file;
-                DOM.modalBody.innerHTML = escapeHtml(log.preview);
+                DOM.modalBody.innerHTML = escapeHtml(log.preview) || 'Arquivo sem conteúdo texto legível ou erro nas linhas lidas.';
                 DOM.modalSize.textContent = formatBytes(log.size_bytes);
                 DOM.modalDate.textContent = formatDate(log.modified);
                 

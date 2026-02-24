@@ -1,0 +1,8 @@
+Deployment start
+Repository https://github.com/kellyson71/Demutram
+Checking project directory is empty
+Project directory is empty
+Cloning code repository
+clone: warning: Could not find remote branch master to clone.
+fatal: Remote branch master not found in upstream origin
+Deployment failed

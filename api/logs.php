@@ -8,51 +8,117 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 header('Content-Type: application/json');
 
-$project = $_GET['project'] ?? 'general';
+$projectFilter = $_GET['project'] ?? 'all';
+
+// O painel estará em domains/logs.protocolosead.com/
+// Então .logs estará em 2 níveis acima: ../../.logs
+// Nota: Em testes locais, isso pode falhar. Se falhar, defina um caminho de fallback ou absoluto.
+$logsDir = realpath(__DIR__ . '/../../../../.logs'); 
+
+// Fallback para ambiente local se a pasta acima não existir (ex: rodando no próprio PC)
+if (!$logsDir || !is_dir($logsDir)) {
+    // Tenta achar na raiz do projeto (para testes locais)
+    $logsDir = realpath(__DIR__ . '/../.logs');
+    if (!$logsDir || !is_dir($logsDir)) {
+         echo json_encode([
+            "generated" => gmdate('Y-m-d\TH:i:s\Z'),
+            "project" => $projectFilter,
+            "count" => 0,
+            "data" => [],
+            "error" => "Log directory not found: " . __DIR__ . '/../../../../.logs'
+        ]);
+        exit;
+    }
+}
 
 $logs = [];
 
-$names = ['error.log', 'access.log', 'debug.log', 'system.log', 'worker.log', 'mail.log', 'db_sync.log', 'api_gateway.log'];
-$snippets = [
-    "PHP Warning: Undefined variable on line 32 in /var/www/html/app/index.php\nStack trace:\n#0 {main}",
-    "[2026-02-23 10:15:00] INFO: User 1204 logged in successfully from IP 192.168.1.10",
-    "Tail recursive call detected in worker. Re-allocating memory block.\nMemory usage: 45MB",
-    "PDOException: SQLSTATE[HY000] [2002] Connection refused in database.php:10\nStack trace:\n#0 /var/www/html/src/db.php(25): PDO->__construct()\n#1 {main}",
-    "GET /api/v1/users 200 OK 45ms",
-    "SMTP connect() failed. https://github.com/PHPMailer/PHPMailer/wiki/Troubleshooting\nError: Connection timed out",
-    "[ERROR] Unable to sync data with remote server. Timeout after 30s.",
-    "DEBUG: Payload received: {\"user_id\": 451, \"action\": \"update_profile\", \"timestamp\": 1735689600}"
-];
+// Busca todos os arquivos no diretório que correspondem ao filtro
+// Ignoramos arquivos .gz por enquanto, focando nos arquivos ativos (.log, _log_...)
+$files = glob($logsDir . '/*');
 
-$count = rand(3, 12);
-for ($i = 0; $i < $count; $i++) {
-    $logName = $names[array_rand($names)];
-    $file = strtolower(str_replace(' ', '_', $project)) . '_' . $logName;
-    
-    // Prevent exactly same filenames
-    if ($i > 0) {
-        $file = str_replace('.log', '_' . date('Ymd_His', strtotime('-' . rand(1, 100) . ' hours')) . '.log', $file);
-    }
-
-    $previewContent = $snippets[array_rand($snippets)];
-    $fullContent = $previewContent . "\n\n...\n[End of snippet]\n\n" . str_repeat("Additional log context... ", 20);
-
-    $logs[] = [
-        "file" => $file,
-        "size_bytes" => rand(512, 15485760), // De 512B a 15MB
-        "modified" => date('Y-m-d\TH:i:s\Z', strtotime('-' . rand(0, 72) . ' hours')),
-        "preview" => $fullContent
-    ];
+if ($files === false) {
+    echo json_encode(['error' => 'Failed to read log directory']);
+    exit;
 }
 
-// Default sort by newest
+// Função para ler as últimas N linhas do arquivo (eficiente para logs grandes)
+function tailFile($filepath, $lines = 50) {
+    $f = @fopen($filepath, "rb");
+    if ($f === false) return "Unreadable file.";
+
+    $buffer = ($lines < 2 ? 64 : ($lines < 10 ? 512 : 4096));
+    fseek($f, -1, SEEK_END);
+    if (fread($f, 1) != "\n") $lines -= 1;
+    
+    $output = '';
+    $chunk = '';
+
+    while (ftell($f) > 0 && $lines >= 0) {
+        $seek = min(ftell($f), $buffer);
+        fseek($f, -$seek, SEEK_CUR);
+        $chunk = fread($f, $seek);
+        $output = $chunk . $output;
+        fseek($f, -mb_strlen($chunk, '8bit'), SEEK_CUR);
+        $lines -= substr_count($chunk, "\n");
+    }
+
+    while ($lines++ < 0) {
+        $output = substr($output, strpos($output, "\n") + 1);
+    }
+    
+    fclose($f);
+    return trim($output);
+}
+
+foreach ($files as $file) {
+    if (!is_file($file)) continue;
+
+    $filename = basename($file);
+    
+    // Ignorar arquivos ocultos e arquivos compactados .gz se preferirmos apenas live logs
+    if (strpos($filename, '.') === 0) continue;
+    
+    // Filtro pelo projeto Selecionado na UI
+    // Ex: "protocolosead_com", "estagiopaudosferros_com", "sema_paudosferros"
+    $match = false;
+    if ($projectFilter === 'all') {
+        $match = true;
+    } else {
+        // Verifica se a string do projeto (ex: protocolosead) existe no nome do arquivo
+        if (strpos($filename, $projectFilter) !== false) {
+            $match = true;
+        }
+    }
+
+    if ($match) {
+        $preview = '';
+        if (substr($filename, -3) === '.gz') {
+            $preview = "[Arquivo Compactado - Pré-visualização indisponível. Baixe para visualizar.]";
+        } else {
+            $preview = tailFile($file, 150); // Pega as ultimas 150 linhas
+            if (empty($preview)) {
+                $preview = "[Arquivo vazio]";
+            }
+        }
+
+        $logs[] = [
+            "file" => $filename,
+            "size_bytes" => filesize($file),
+            "modified" => date('Y-m-d\TH:i:s\Z', filemtime($file)),
+            "preview" => mb_convert_encoding($preview, 'UTF-8', 'UTF-8') // Evita erros JSON com chars inválidos
+        ];
+    }
+}
+
+// Ordenar do mais recentemente modificado para o mais antigo
 usort($logs, function($a, $b) {
     return strtotime($b['modified']) - strtotime($a['modified']);
 });
 
 echo json_encode([
     "generated" => gmdate('Y-m-d\TH:i:s\Z'),
-    "project" => $project,
+    "project" => $projectFilter,
     "count" => count($logs),
     "data" => $logs
 ]);

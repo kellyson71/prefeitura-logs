@@ -1,0 +1,9 @@
+Deployment start
+Repository git@github.com:kellyson71/SEMA.git
+Checking project directory is empty
+Project directory is git repository
+pull: error: The following untracked working tree files would be overwritten by merge:
+	sema-sistema/resources/views/admin/imprimir.blade.php
+Please move or remove them before you merge.
+Aborting
+Deployment failed

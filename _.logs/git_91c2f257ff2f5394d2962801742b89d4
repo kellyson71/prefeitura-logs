@@ -1,0 +1,13 @@
+Deployment start
+Repository https://github.com/kellyson71/agendamento-system.git
+Checking project directory is empty
+Project directory is git repository
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+Looking for composer.lock file
+composer.lock file was not found
+Looking for composer.json file
+composer.json file was not found
+Deployment end
