@@ -12,6 +12,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Logs Analítico</title>
     
+    <!-- Evitar Erros Favicon 404 -->
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
