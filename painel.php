@@ -10,310 +10,311 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYS.LOG.TERMINAL // SECURE_ACCESS</title>
+    <title>Painel de Logs // Dashboard Analítica</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --term-bg: #030806;
-            --term-green: #00ff41;
-            --term-cyan: #00f0ff;
-            --term-red: #ff003c;
-            --term-yellow: #fcee0a;
-            --term-purple: #b100ff;
-            --term-dim: rgba(0, 255, 65, 0.3);
-            --term-glow: rgba(0, 255, 65, 0.15);
+    
+    <!-- Tailwind Custom Config para cores VSCode-like -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        vs: {
+                            bg: '#0d1117',        // Fundo princpal
+                            panel: '#161b22',     // Paineis
+                            border: '#30363d',    // Linhas
+                            text: '#c9d1d9',      // Texto base
+                            muted: '#8b949e',     // Texto secundario
+                            blue: '#58a6ff',      // Ações/Links
+                            green: '#3fb950',     // Sucesso/Strings
+                            yellow: '#d29922',    // Avisos/Functions
+                            red: '#f85149',       // Erros
+                            purple: '#bc8cff',    // Keywords
+                            cyan: '#39c5cf',      // Variaveis
+                            hover: '#1f2428'      // Hover state
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'],
+                    }
+                }
+            }
         }
-        
+    </script>
+
+    <style>
         body { 
-            font-family: 'JetBrains Mono', monospace; 
-            background-color: var(--term-bg);
-            color: var(--term-green);
+            background-color: theme('colors.vs.bg');
+            color: theme('colors.vs.text');
             overflow: hidden;
-            /* Subtile scanline effect */
-            background-image: linear-gradient(rgba(0, 255, 65, 0.02) 50%, transparent 50%);
-            background-size: 100% 4px;
-            pointer-events: auto;
         }
 
-        /* Screen distortion/vignette effect */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%);
-            pointer-events: none;
-            z-index: 100;
+        /* Scrollbars customizadas e discretas */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background: theme('colors.vs.border'); 
+            border: 2px solid theme('colors.vs.bg');
+            border-radius: 6px; 
         }
-        
-        .edex-border {
-            border: 1px solid var(--term-dim);
-            box-shadow: inset 0 0 15px var(--term-glow);
-            background: rgba(0, 15, 5, 0.6);
-            backdrop-filter: blur(4px);
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.vs.muted'); }
+        ::-webkit-scrollbar-corner { background: transparent; }
+
+        /* Animações UI Suaves */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in-right { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Classes e Utilidades de Botões/Paineis */
+        .glass-panel {
+            background: rgba(22, 27, 34, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid theme('colors.vs.border');
+            border-radius: 0.75rem;
+        }
+
+        .nav-item {
+            transition: all 0.2s ease;
             position: relative;
         }
         
-        /* Corner accents for borders */
-        .edex-border::after {
+        .nav-item.active {
+            background: rgba(88, 166, 255, 0.1);
+            color: theme('colors.vs.blue');
+            font-weight: 600;
+        }
+        
+        .nav-item.active::before {
             content: '';
             position: absolute;
-            top: -1px; left: -1px; right: -1px; bottom: -1px;
-            border: 1px solid transparent;
-            /* Create corner markers using background linear gradients */
-            background: 
-                linear-gradient(var(--term-cyan), var(--term-cyan)) top left,
-                linear-gradient(var(--term-cyan), var(--term-cyan)) top left,
-                linear-gradient(var(--term-cyan), var(--term-cyan)) bottom right,
-                linear-gradient(var(--term-cyan), var(--term-cyan)) bottom right;
-            background-size: 8px 1px, 1px 8px;
-            background-repeat: no-repeat;
-            pointer-events: none;
-            z-index: 10;
+            left: 0; top: 10%; bottom: 10%; width: 3px;
+            background: theme('colors.vs.blue');
+            border-radius: 0 4px 4px 0;
         }
 
-        .edex-header {
-            border-bottom: 2px solid var(--term-dim);
-            background: rgba(0, 240, 255, 0.05);
-            color: var(--term-cyan);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            box-shadow: 0 2px 10px rgba(0, 240, 255, 0.1);
-        }
-
-        .scroll-hacker::-webkit-scrollbar { width: 8px; height: 8px; }
-        .scroll-hacker::-webkit-scrollbar-track { background: rgba(0, 20, 0, 0.5); border-left: 1px solid var(--term-dim); }
-        .scroll-hacker::-webkit-scrollbar-thumb { background: var(--term-dim); border: 1px solid var(--term-cyan); }
-        .scroll-hacker::-webkit-scrollbar-thumb:hover { background: var(--term-cyan); }
-        .scroll-hacker::-webkit-scrollbar-corner { background: transparent; }
-
-        .animate-blink { animation: blink 1.2s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        .line-glow { text-shadow: 0 0 5px currentColor; }
-
-        .btn-hacker {
-            border: 1px solid var(--term-dim);
-            color: var(--term-green);
-            background: rgba(0, 255, 65, 0.05);
-            transition: all 0.2s;
-            text-transform: uppercase;
+        /* 
+         * SYNTAX HIGHLIGHTING CLASSES FOR LOG CONSOLE 
+         */
+        .log-line { 
+            display: flex; 
+            padding: 0 1rem; 
+            min-height: 1.5rem;
             position: relative;
-            overflow: hidden;
         }
-        .btn-hacker:hover {
-            background: rgba(0, 255, 65, 0.2);
-            border-color: var(--term-green);
-            color: #fff;
-            text-shadow: 0 0 5px var(--term-green);
-            box-shadow: 0 0 10px var(--term-glow);
-        }
-        .btn-hacker:active {
-            transform: scale(0.98);
-        }
-
-        /* Glitch effect on hover for warnings */
-        .glitch-hover:hover {
-            animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
-            color: var(--term-red);
-        }
-        @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
+        .log-line:hover { background-color: rgba(201, 209, 217, 0.05); }
+        
+        .log-num { 
+            width: 3rem; 
+            flex-shrink: 0; 
+            text-align: right; 
+            padding-right: 1rem; 
+            color: theme('colors.vs.muted'); 
+            user-select: none;
+            border-right: 1px solid theme('colors.vs.border');
+            margin-right: 1rem;
         }
 
-        /* Error/Warning Blocks */
-        .fatal-block { border-left-color: var(--term-red) !important; color: #ff6b81; background: rgba(255, 0, 60, 0.1) !important; }
-        .warn-block { border-left-color: var(--term-yellow) !important; color: #ffd32a; background: rgba(252, 238, 10, 0.05) !important; }
-        .mail-block { border-left-color: var(--term-purple) !important; color: #d980fa; background: rgba(177, 0, 255, 0.05) !important; }
-        .mail-fail-block { border-left-color: #ff3f34 !important; color: #ff3f34; font-weight: bold; background: rgba(255, 63, 52, 0.2) !important; }
-        .info-block { border-left-color: var(--term-cyan) !important; color: #4bcffa; background: rgba(0, 240, 255, 0.03) !important; }
+        /* Colors based on regex matches */
+        .hl-timestamp { color: theme('colors.vs.muted'); }
+        .hl-path { color: theme('colors.vs.blue'); text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color 0.2s; cursor: pointer; }
+        .hl-path:hover { text-decoration-color: theme('colors.vs.blue'); }
+        .hl-string { color: theme('colors.vs.green'); }
+        .hl-var { color: theme('colors.vs.cyan'); }
+        .hl-keyword { color: theme('colors.vs.purple'); }
+        .hl-func { color: theme('colors.vs.yellow'); }
+        
+        /* Severities */
+        .hl-error { color: theme('colors.vs.red'); font-weight: 600; }
+        .hl-warning { color: theme('colors.vs.yellow'); }
+        
+        /* Row Highlighting on critical */
+        .row-critical { background: rgba(248, 81, 73, 0.1) !important; border-left: 3px solid theme('colors.vs.red'); }
+        .row-warning { background: rgba(210, 153, 34, 0.05) !important; border-left: 3px solid theme('colors.vs.yellow'); }
+        .row-mail { background: rgba(188, 140, 255, 0.05) !important; border-left: 3px solid theme('colors.vs.purple'); }
 
     </style>
 </head>
-<body class="flex h-screen flex-col p-2 sm:p-4 gap-3 text-xs sm:text-sm">
-    
-    <!-- Top Nav/Header -->
-    <header class="edex-border flex flex-col sm:flex-row items-center justify-between px-4 py-3 shrink-0 gap-3 z-10">
-        <div class="flex items-center gap-4 w-full sm:w-auto justify-between">
-            <div class="flex items-center gap-2">
-                <i data-lucide="cpu" class="w-6 h-6 text-cyan-400"></i>
-                <span class="text-cyan-400 font-bold tracking-widest text-lg sm:text-xl line-glow">
-                    SYS.LOG.TERMINAL<span class="animate-blink">_</span>
-                </span>
+<body class="flex h-screen overflow-hidden antialiased flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-14 bg-vs-panel border-b border-vs-border shrink-0 flex items-center justify-between px-4 z-20">
+        <div class="flex items-center gap-3">
+            <div class="p-1.5 bg-vs-blue/10 rounded-lg">
+                <i data-lucide="layers" class="w-5 h-5 text-vs-blue"></i>
             </div>
-            <span class="hidden md:inline px-3 py-1 bg-green-900/40 text-green-400 border border-green-500/50 rounded-sm font-bold text-[10px] tracking-wider">
-                SECURE_CONNECTION: ESTABLISHED // PORT 22
-            </span>
+            <h1 class="text-sm font-semibold tracking-wide text-gray-200">Terminal Analítico</h1>
         </div>
 
-        <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-            <div id="loading-indicator" class="text-yellow-400 font-bold items-center gap-2 hidden">
-                <span class="animate-pulse">[FETCHING_DATA...]</span>
+        <div class="flex items-center gap-4">
+            <div id="global-spinner" class="hidden items-center gap-2 text-xs font-medium text-vs-muted">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-vs-blue"></i> Lendo disco...
             </div>
             
-            <div class="flex items-center gap-3">
-                <span class="text-cyan-400 border border-cyan-500/50 px-3 py-1 bg-cyan-900/20 shadow-[0_0_8px_rgba(0,240,255,0.2)]">
-                    USR: <?= strtoupper($_SESSION['username']) ?>_ADM
-                </span>
-                <a href="logout.php" class="btn-hacker !border-red-500/50 !text-red-500 hover:!bg-red-500/20 px-3 py-1 flex items-center gap-1">
-                    <i data-lucide="power" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">[LOGOUT]</span>
+            <div class="h-6 w-px bg-vs-border"></div>
+
+            <!-- Botões Rápidos -->
+            <button onclick="loadLogs()" class="text-vs-muted hover:text-vs-text transition-colors p-1.5 rounded-md hover:bg-white/5" title="Sincronizar">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            
+            <div class="flex items-center gap-2 pl-2 border-l border-vs-border">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-vs-blue to-vs-purple flex items-center justify-center text-xs font-bold text-white shadow-sm ring-2 ring-vs-bg">
+                    <?= strtoupper(substr($_SESSION['username'], 0, 1)) ?>
+                </div>
+                <a href="logout.php" class="text-vs-muted hover:text-vs-red transition-colors ml-2" title="Sair do sistema">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <div class="flex-1 flex flex-col lg:flex-row gap-3 overflow-hidden z-10">
+    <!-- App Body -->
+    <div class="flex-1 flex overflow-hidden">
         
-        <!-- Sidebar: Project Structure -->
-        <aside class="edex-border w-full lg:w-72 flex flex-col shrink-0 h-48 lg:h-auto">
-            <div class="edex-header p-3 font-bold flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="hard-drive" class="w-4 h-4 text-cyan-400"></i> SYSTEM_NODES
-                </div>
-                <div class="text-[10px] text-cyan-400/50">MNT/DEV/LOGS</div>
+        <!-- Sidebar: Projects Menu -->
+        <aside class="w-64 bg-[#090d13] border-r border-vs-border flex flex-col shrink-0">
+            <div class="px-4 py-3 border-b border-vs-border bg-vs-panel/50">
+                <h2 class="text-xs font-semibold text-vs-muted uppercase tracking-wider">Espaços de Trabalho</h2>
             </div>
             
-            <div class="flex-1 overflow-y-auto scroll-hacker p-2 space-y-[2px]" id="project-list">
-                <!-- Rendered dynamically -->
-            </div>
-            
-            <!-- Realtime Metrics Mock -->
-            <div class="border-t border-green-500/30 bg-black/40 p-3 text-[10px] sm:text-xs">
-                <div class="text-cyan-400 mb-2 border-b border-cyan-500/30 pb-1 w-full flex justify-between">
-                    <span>HARDWARE_METRICS</span>
-                    <i data-lucide="activity" class="w-3 h-3 animate-pulse"></i>
-                </div>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <div class="flex justify-between"><span>CPU_USAGE:</span> <span class="text-green-400 text-right">04.2%</span></div>
-                    <div class="flex justify-between"><span>MEM_ALLOC:</span> <span class="text-yellow-400 text-right">68.1%</span></div>
-                    <div class="flex justify-between"><span>I/O_DISK:</span> <span class="text-green-400 text-right">OK</span></div>
-                    <div class="flex justify-between"><span>NET_PKG:</span> <span id="net-status" class="text-cyan-400 animate-pulse text-right">TX/RX</span></div>
-                    <div class="flex justify-between col-span-2 pt-1 mt-1 border-t border-green-500/20">
-                        <span>SYS_UPTIME:</span> <span class="text-green-400"><span id="uptime">0d 0h 0m</span></span>
-                    </div>
-                </div>
-            </div>
+            <nav class="flex-1 overflow-y-auto p-2 space-y-0.5" id="project-list">
+                <!-- Rendered by JS -->
+            </nav>
         </aside>
 
-        <!-- Center: Datagrid / Log Files -->
-        <main class="edex-border flex-1 flex flex-col min-w-0">
-            <!-- Header/Controls -->
-            <div class="edex-header p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-black/60">
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <i data-lucide="terminal-square" class="w-5 h-5 text-cyan-400"></i>
-                    <span id="current-project-title" class="font-bold tracking-wide break-all">TARGET: NONE</span>
-                </div>
-                
-                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                    <div class="relative w-full sm:w-auto group">
-                        <i data-lucide="search" class="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-green-500/50 group-focus-within:text-cyan-400"></i>
-                        <input type="text" id="search-input" placeholder="> GREP_FILTER_FILE" class="bg-black border border-green-500/50 text-green-400 pl-8 pr-2 py-1.5 outline-none focus:border-cyan-400 focus:shadow-[0_0_8px_rgba(0,240,255,0.4)] placeholder-green-700 w-full sm:w-48 lg:w-64 transition-all">
+        <!-- Main Workspace Area -->
+        <main class="flex-1 flex flex-col bg-vs-bg relative min-w-0" id="main-workspace">
+            
+            <!-- Estado Inicial: Dashboard None -->
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center fade-in z-10">
+                <div class="w-24 h-24 mb-6 relative">
+                    <div class="absolute inset-0 bg-vs-blue/20 rounded-full blur-xl animate-pulse"></div>
+                    <div class="relative bg-vs-panel border border-vs-border p-5 rounded-2xl shadow-xl">
+                        <i data-lucide="activity" class="w-12 h-12 text-vs-blue"></i>
                     </div>
-                    
-                    <button onclick="loadLogs()" class="btn-hacker px-3 py-1.5 flex-1 sm:flex-none flex justify-center items-center gap-2">
-                        <i data-lucide="refresh-cw" id="icon-refresh" class="w-4 h-4"></i>
-                        <span>[EXEC_SYNC]</span>
-                    </button>
                 </div>
+                <h2 class="text-xl font-medium text-vs-text mb-2">Analisador de Logs</h2>
+                <p class="text-vs-muted text-sm max-w-sm text-center">Selecione um espaço de trabalho na lateral para inspecionar os logs de sistema e aplicações.</p>
             </div>
 
-            <!-- Previews Grid -->
-            <div class="flex-1 overflow-y-auto scroll-hacker p-4 grid grid-cols-1 2xl:grid-cols-2 gap-4 content-start" id="logs-container">
-                <div class="col-span-full h-full min-h-[50vh] flex flex-col items-center justify-center text-green-500/30 space-y-4">
-                    <i data-lucide="radar" class="w-16 h-16 animate-spin-slow opacity-50"></i>
-                    <p class="font-bold tracking-widest text-lg animate-pulse">> AWAITING_TARGET_SELECTION...</p>
+            <!-- View: Lista de Logs do Projeto -->
+            <div id="project-view" class="hidden flex-col h-full fade-in z-20 bg-vs-bg">
+                
+                <!-- File List Header Toolbar -->
+                <div class="bg-vs-panel h-12 border-b border-vs-border flex items-center justify-between px-4 shrink-0">
+                    <div class="flex items-center gap-2 text-sm text-vs-text">
+                        <i data-lucide="folder-open" class="w-4 h-4 text-vs-blue"></i>
+                        <span id="current-project-title" class="font-medium">Projeto</span>
+                    </div>
+
+                    <div class="relative">
+                        <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-vs-muted"></i>
+                        <input type="text" id="search-input" placeholder="Filtrar arquivos..." class="bg-[#090d13] border border-vs-border text-xs text-vs-text pl-8 pr-3 py-1.5 rounded-md outline-none focus:border-vs-blue focus:ring-1 focus:ring-vs-blue w-48 transition-all">
+                    </div>
+                </div>
+
+                <!-- Painel Dividido (Lista de Arquivos vs Console Integrado) -->
+                <div class="flex-1 flex overflow-hidden">
+                    
+                    <!-- Coluna Esquerda: Arquivos de Log -->
+                    <div class="w-72 border-r border-vs-border bg-vs-panel/30 flex flex-col shrink-0 flex-none">
+                        <div class="p-2 border-b border-vs-border text-[10px] font-bold text-vs-muted uppercase tracking-wide flex justify-between">
+                            <span>Arquivos</span>
+                            <span id="file-count">0</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-1.5 space-y-1" id="logs-container">
+                            <!-- Cards de arquivos renderizados aqui -->
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: O "Console" em si, grande, focado na leitura -->
+                    <div class="flex-1 flex flex-col min-w-0 bg-vs-bg relative">
+                        
+                        <!-- Empty Console State -->
+                        <div id="console-empty" class="absolute inset-0 flex flex-col items-center justify-center text-vs-muted z-10 bg-vs-bg">
+                            <i data-lucide="terminal-square" class="w-12 h-12 opacity-20 mb-3"></i>
+                            <p class="text-sm">Selecione um arquivo ao lado para abrir o console.</p>
+                        </div>
+
+                        <!-- Console Ativo -->
+                        <div id="console-active" class="hidden flex-col h-full z-20">
+                            
+                            <!-- Console File Tab -->
+                            <div class="h-10 bg-[#090d13] border-b border-vs-border flex items-end px-2 gap-1 shrink-0 overflow-x-auto">
+                                <!-- The "Tab" -->
+                                <div class="bg-vs-bg border border-vs-border border-b-0 rounded-t-lg px-3 py-1.5 flex items-center gap-2 group min-w-0 max-w-xs relative shrink-0">
+                                    <div class="w-2 h-2 rounded-full bg-vs-green"></div>
+                                    <span id="console-filename" class="text-xs font-mono text-vs-text truncate">arquivo.log</span>
+                                    <!-- Ação de fechar tab -->
+                                    <button class="opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded ml-1 transition-opacity" onclick="closeConsole()">
+                                        <i data-lucide="x" class="w-3 h-3 text-vs-muted"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="ml-auto mb-1 flex items-center gap-1">
+                                    <button onclick="copyConsoleOutput()" class="p-1 px-2 text-xs text-vs-muted hover:text-vs-text bg-white/5 hover:bg-white/10 border border-vs-border rounded flex items-center gap-1 transition-colors" id="btn-copy">
+                                        <i data-lucide="copy" class="w-3 h-3"></i>
+                                        <span>Copiar</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Area do Código -->
+                            <div class="flex-1 overflow-auto bg-vs-bg font-mono text-[13px] leading-relaxed py-2 selection:bg-vs-blue/30 relative" id="console-body">
+                                <!-- Linhas parseadas em JS entram aqui -->
+                            </div>
+                            
+                            <!-- Status Bar Base -->
+                            <div class="h-7 bg-[#007acc] text-white text-[11px] flex items-center justify-between px-3 shrink-0 font-sans shadow-[0_-2px_10px_rgba(0,122,204,0.1)]">
+                                <div class="flex items-center gap-4">
+                                    <span class="flex items-center gap-1"><i data-lucide="rocket" class="w-3 h-3"></i> Pronto</span>
+                                    <span class="flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3 text-white"></i> <span id="status-errs">0 Erros</span></span>
+                                    <span class="flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3 text-white"></i> <span id="status-warns">0 Avisos</span></span>
+                                </div>
+                                <div class="flex items-center gap-4 text-white/80">
+                                    <span id="status-size">0 KB</span>
+                                    <span>UTF-8</span>
+                                    <span>PHP</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Details View Terminal (Overlay) -->
-    <div id="log-modal" class="fixed inset-0 z-50 p-0 sm:p-4 md:p-8 hidden bg-black/90 backdrop-blur-md transition-opacity opacity-0 duration-300">
-        <div class="edex-border w-full h-full flex flex-col bg-[#020503] shadow-[0_0_40px_rgba(0,240,255,0.15)] transform scale-95 opacity-0 transition-all duration-300" id="modal-content">
-            
-            <!-- Modal Header -->
-            <div class="flex-none edex-header p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-black/80">
-                <div class="flex flex-col min-w-0">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="file-code" class="w-5 h-5 text-cyan-400 shrink-0"></i>
-                        <span id="modal-title" class="font-bold text-base sm:text-xl text-white tracking-widest truncate">/var/log/file.log</span>
-                    </div>
-                    <span id="modal-meta" class="text-xs text-cyan-500/70 mt-1 flex items-center gap-2">
-                        <i data-lucide="info" class="w-3 h-3"></i> <span>SIZE: 0B | TS: N/A</span>
-                    </span>
-                </div>
-                
-                <div class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button class="btn-hacker px-4 py-2 flex-1 sm:flex-none flex justify-center items-center gap-2 !border-cyan-500/50 !text-cyan-400 hover:!bg-cyan-500/20" onclick="copyLogContent()" id="copy-btn">
-                        <i data-lucide="copy" class="w-4 h-4"></i> <span>[YANK]</span>
-                    </button>
-                    <button class="btn-hacker px-4 py-2 flex-1 sm:flex-none flex justify-center items-center gap-2 !border-red-500/50 !text-red-500 hover:!bg-red-500/20" onclick="closeModal()">
-                        <i data-lucide="x-square" class="w-4 h-4"></i> <span>[KILL_PROC]</span>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Analyzed Log Output -->
-            <div class="flex-1 overflow-x-auto overflow-y-auto scroll-hacker p-0 m-2 border border-green-500/20 bg-black/50" id="modal-body">
-                <!-- Data injected dynamically -->
-            </div>
-            
-            <!-- Terminal Status Bar -->
-            <div class="flex-none border-t border-cyan-500/30 p-2 text-[10px] sm:text-xs text-cyan-500 bg-cyan-900/10 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <span class="animate-pulse">_</span>
-                    <span>PROCESS: LOG_ANALYZER V2.0 // EOF_REACHED</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="hidden sm:inline" id="err-count-display">ERRORS_DETECTED: 0</span>
-                    <span class="hidden sm:inline" id="warn-count-display">WARNINGS: 0</span>
-                    <span>ENCODING: UTF-8</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- JS Logic -->
+    <!-- Interface JavaScript -->
     <script>
         lucide.createIcons();
-
-        // Uptime counter mockup
-        let uptimeS = Math.floor(Math.random()*10000);
-        setInterval(() => {
-            uptimeS++;
-            const d = Math.floor(uptimeS / 86400);
-            const h = Math.floor((uptimeS % 86400) / 3600);
-            const m = Math.floor((uptimeS % 3600) / 60);
-            document.getElementById('uptime').innerText = `${d}d ${h}h ${m}m`;
-        }, 60000); //update every min
-        document.getElementById('uptime').innerText = `${Math.floor(uptimeS / 86400)}d ${Math.floor((uptimeS % 86400) / 3600)}h ${Math.floor((uptimeS % 3600) / 60)}m`;
 
         const state = {
             currentProject: null,
             logs: [],
             projects: [
-                { id: 'all', name: 'ROOT_/[ALL_SYS_LOGS]' },
-                { id: 'protocolosead_com', name: 'SYS_PROTOCOL_SEAD' },
-                { id: 'estagiopaudosferros_com', name: 'SYS_ESTAGIO_PDF' },
-                { id: 'sema_paudosferros', name: 'SYS_SEMA_PDF' },
-                { id: 'demutran_protocolosead_com', name: 'SYS_DEMUTRAN_SEAD' },
-                { id: 'demutranpaudosferros', name: 'SYS_DEMUTRAN_PDF' },
-                { id: 'suap2_estagiopaudosferros_com', name: 'DB_SUAP_2' },
-                { id: 'supaco_estagiopaudosferros_com', name: 'DB_SUPACO' },
-                { id: 'api_estagiopaudosferros_com', name: 'API_ESTAGIO' },
-                { id: 'api_protocolosead_com', name: 'API_PROTOCOLO' },
+                { id: 'all', name: 'Todos os Projetos' },
+                { id: 'protocolosead_com', name: 'Protocolo SEAD' },
+                { id: 'estagiopaudosferros_com', name: 'Estágio PDF' },
+                { id: 'sema_paudosferros', name: 'SEMA PDF' },
+                { id: 'demutran_protocolosead_com', name: 'Demutran SEAD' },
+                { id: 'demutranpaudosferros', name: 'Demutran PDF' },
+                { id: 'suap2_estagiopaudosferros_com', name: 'SUAP 2 (DB)' },
+                { id: 'supaco_estagiopaudosferros_com', name: 'Supaco (DB)' },
+                { id: 'api_estagiopaudosferros_com', name: 'API Estágio' },
+                { id: 'api_protocolosead_com', name: 'API Protocolo' }
             ]
         };
 
@@ -322,46 +323,53 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             logsContainer: document.getElementById('logs-container'),
             currentProjectTitle: document.getElementById('current-project-title'),
             searchInput: document.getElementById('search-input'),
-            iconRefresh: document.getElementById('icon-refresh'),
-            loadingInd: document.getElementById('loading-indicator'),
-            modal: document.getElementById('log-modal'),
-            modalContent: document.getElementById('modal-content'),
-            modalTitle: document.getElementById('modal-title'),
-            modalBody: document.getElementById('modal-body'),
-            modalMeta: document.getElementById('modal-meta'),
-            errCount: document.getElementById('err-count-display'),
-            warnCount: document.getElementById('warn-count-display'),
+            fileCount: document.getElementById('file-count'),
+            
+            views: {
+                empty: document.getElementById('empty-state'),
+                project: document.getElementById('project-view'),
+                consoleEmpty: document.getElementById('console-empty'),
+                consoleActive: document.getElementById('console-active'),
+            },
+            
+            console: {
+                filename: document.getElementById('console-filename'),
+                body: document.getElementById('console-body'),
+                statusErrs: document.getElementById('status-errs'),
+                statusWarns: document.getElementById('status-warns'),
+                statusSize: document.getElementById('status-size'),
+            },
+
+            spinner: document.getElementById('global-spinner')
         };
 
         const formatBytes = (bytes) => {
-            if (bytes === 0) return '0B';
+            if (bytes === 0) return '0 B';
             const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         };
 
         const formatDate = (dateString) => {
             const date = new Date(dateString);
-            return date.toISOString().replace('T', ' ').substring(0, 19);
+            return new Intl.DateTimeFormat('pt-BR', {
+                month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }).format(date);
         };
 
-        const escapeHtml = (unsafe) => unsafe
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-
+        // Renderiza o menu lateral
         function renderProjects() {
             DOM.projectList.innerHTML = state.projects.map(p => {
                 const isActive = state.currentProject === p.id;
+                let iconStr = p.id === 'all' ? 'layout-grid' : (p.id.includes('db') ? 'database' : 'box');
+                
                 return `
                 <button onclick="selectProject('${p.id}')" 
-                        class="w-full flex items-center justify-between px-3 py-2 text-left transition-all border-l-2 group
-                        ${isActive 
-                            ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300 font-bold shadow-[inset_4px_0_0_rgba(0,240,255,0.4)]' 
-                            : 'border-transparent text-green-600 hover:bg-green-900/20 hover:text-green-400 hover:border-green-500/50'}">
-                    <div class="flex items-center gap-2 truncate">
-                        <i data-lucide="${p.id==='all' ? 'layers' : (p.id.includes('db') ? 'database' : 'folder-git-2')}" class="w-4 h-4 shrink-0 opacity-70 group-hover:opacity-100"></i>
-                        <span class="truncate mt-0.5">./${p.name}</span>
-                    </div>
+                        class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left
+                        ${isActive ? 'active' : 'text-vs-muted hover:text-vs-text hover:bg-white/5'}">
+                    <i data-lucide="${iconStr}" class="w-4 h-4 shrink-0 opacity-80"></i>
+                    <span class="truncate">${p.name}</span>
                 </button>
             `}).join('');
             lucide.createIcons();
@@ -370,17 +378,27 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         function selectProject(projectId) {
             state.currentProject = projectId;
             const proj = state.projects.find(p => p.id === projectId);
-            DOM.currentProjectTitle.textContent = `TARGET: ${proj ? proj.name : 'UNKNOWN'} // [MOUNTED]`;
+            
+            DOM.currentProjectTitle.textContent = proj ? proj.name : 'Projeto';
+            DOM.views.empty.classList.add('hidden');
+            DOM.views.project.classList.remove('hidden');
+            DOM.views.project.classList.add('flex');
+            
+            // Fecha console atual
+            closeConsole();
+
             renderProjects();
+            DOM.searchInput.value = ''; // Limpa busca
             loadLogs();
         }
 
         async function loadLogs() {
             if (!state.currentProject) return;
 
-            DOM.iconRefresh.classList.add('animate-spin');
-            DOM.loadingInd.classList.remove('hidden');
-            DOM.loadingInd.classList.add('flex');
+            DOM.spinner.classList.remove('hidden');
+            DOM.spinner.classList.add('flex');
+            DOM.logsContainer.innerHTML = '<div class="text-center text-vs-muted text-xs p-4"><i data-lucide="loader" class="w-4 h-4 animate-spin mx-auto mb-2"></i> Lendo disco...</div>';
+            lucide.createIcons();
 
             try {
                 const response = await fetch(`api/logs.php?project=${encodeURIComponent(state.currentProject)}`);
@@ -389,71 +407,31 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                 if (data.data) {
                     state.logs = data.data;
                     renderLogs();
-                } else if (data.error) {
-                    showError(data.error);
                 } else {
-                    showError("ERR_NULL_RESPONSE");
+                    DOM.logsContainer.innerHTML = `<div class="text-xs text-vs-red p-3 border border-vs-red/30 bg-vs-red/10 rounded mx-2">Erro API: ${data.error || 'Falha'}</div>`;
                 }
             } catch (error) {
                 console.error(error);
-                showError("ERR_CONNECTION_REFUSED_OR_DIR_NOT_FOUND");
+                DOM.logsContainer.innerHTML = `<div class="text-xs text-vs-red p-3 border border-vs-red/30 bg-vs-red/10 rounded mx-2">Falha de rede.</div>`;
             } finally {
-                DOM.iconRefresh.classList.remove('animate-spin');
-                DOM.loadingInd.classList.add('hidden');
-                DOM.loadingInd.classList.remove('flex');
+                DOM.spinner.classList.add('hidden');
+                DOM.spinner.classList.remove('flex');
             }
         }
 
-        // Mini syntax highlighter for the preview cards
-        function getHighlightsFromPreview(content) {
-            let lower = content.toLowerCase();
-            let hintsHtml = '';
-            
-            // Critical
-            if (lower.includes('fatal error') || lower.includes('exception') || lower.includes("doesn't exist")) {
-                hintsHtml += '<span class="px-1.5 py-0.5 bg-red-900/50 text-red-500 border border-red-500/30 text-[10px] uppercase font-bold glitch-hover">[FATAL_ERR]</span> ';
-            }
-            // Warning/Notice/Syntax
-            if (lower.includes('warning') || lower.includes('syntax error') || lower.includes('undefined array key')) {
-                hintsHtml += '<span class="px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 border border-yellow-500/30 text-[10px] uppercase font-bold">[WARN/SYNTAX]</span> ';
-            }
-            // Mail/Upload Critical
-            if (lower.includes('mail') || lower.includes('smtp')) {
-                let badgeClass = lower.includes('fail') || lower.includes('error') ? 'bg-red-900/50 text-red-400 border-red-400/50 blink' : 'bg-purple-900/30 text-purple-400 border-purple-500/30';
-                hintsHtml += `<span class="px-1.5 py-0.5 ${badgeClass} border text-[10px] uppercase font-bold">[SMTP_TRACE]</span> `;
-            }
-            if (lower.includes('file not found')) {
-                hintsHtml += '<span class="px-1.5 py-0.5 bg-cyan-900/30 text-cyan-300 border border-cyan-500/30 text-[10px] uppercase font-bold">[MISSING_FILE]</span> ';
-            }
-
-            if(!hintsHtml) {
-                hintsHtml = '<span class="px-1.5 py-0.5 bg-green-900/20 text-green-500/50 border border-green-500/20 text-[10px] uppercase">[ROUTINE_LOG]</span>';
-            }
-
-            return hintsHtml;
-        }
-
+        // Renderiza a lista de arquivos de log do lado esquerdo
         function renderLogs() {
-            if (!state.logs || state.logs.length === 0) {
-                DOM.logsContainer.innerHTML = `
-                    <div class="col-span-full h-full min-h-[40vh] flex flex-col items-center justify-center text-green-500/50">
-                        <i data-lucide="package-open" class="w-12 h-12 mb-4 opacity-50"></i>
-                        <p class="font-bold tracking-widest">[DIR_EMPTY] ZERO_LOGS_FOUND_FOR_TARGET</p>
-                    </div>
-                `;
-                lucide.createIcons();
-                return;
-            }
-
             let filtered = [...state.logs];
             const term = DOM.searchInput.value.toLowerCase().trim();
             if (term) filtered = filtered.filter(l => l.file.toLowerCase().includes(term));
 
+            DOM.fileCount.textContent = filtered.length;
+
             if (filtered.length === 0) {
                 DOM.logsContainer.innerHTML = `
-                    <div class="col-span-full h-full min-h-[40vh] flex flex-col items-center justify-center text-yellow-500/50">
-                        <i data-lucide="filter-X" class="w-12 h-12 mb-4 opacity-50"></i>
-                        <p class="font-bold tracking-widest">[GREP_FAIL] NO_MATCH_FOUND</p>
+                    <div class="text-center py-8 text-vs-muted">
+                        <i data-lucide="file-warning" class="w-6 h-6 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-xs">Nenhum arquivo encontrado.</p>
                     </div>
                 `;
                 lucide.createIcons();
@@ -461,191 +439,175 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             }
 
             DOM.logsContainer.innerHTML = filtered.map((log) => {
-                const statusHints = getHighlightsFromPreview(log.preview);
-                // Extract last couple lines for preview
-                const lines = log.preview.split('\\n');
-                const lastLines = lines.slice(-3).join('\\n').trim();
+                // Descobre se tem erros pelo preview (visual rápido na sidebar)
+                const hasErr = log.preview.toLowerCase().includes('error') || log.preview.toLowerCase().includes('fail');
+                const fileIconColor = hasErr ? 'text-vs-red' : 'text-vs-yellow';
 
                 return `
-                <div class="bg-black/60 border border-green-500/30 flex flex-col group relative overflow-hidden h-48 sm:h-56 transform transition-all hover:-translate-y-1 hover:border-cyan-500/60 hover:shadow-[0_4px_20px_rgba(0,240,255,0.1)]">
-                    
-                    <!-- decorative corner -->
-                    <div class="absolute top-0 right-0 w-8 h-8 opacity-20 pointer-events-none" style="background: linear-gradient(-45deg, var(--term-cyan) 50%, transparent 50%);"></div>
-
-                    <div class="p-3 border-b border-green-500/20 bg-green-900/10 flex justify-between items-start gap-2">
-                        <div class="font-bold text-cyan-300 truncate w-full flex items-center gap-2" title="${log.file}">
-                            <i data-lucide="file-json-2" class="w-4 h-4 shrink-0 opacity-70"></i> 
-                            <span class="truncate mt-0.5">${log.file}</span>
+                <button onclick="openConsole('${encodeURIComponent(JSON.stringify(log))}')" class="w-full bg-vs-bg border border-vs-border hover:border-vs-muted rounded-md p-2.5 flex flex-col gap-1.5 transition-colors text-left group">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5 ${fileIconColor} shrink-0 opacity-80 group-hover:opacity-100"></i>
+                            <span class="text-[13px] font-medium text-vs-text truncate" title="${log.file}">${log.file}</span>
                         </div>
                     </div>
-                    
-                    <!-- Insights badges -->
-                    <div class="px-3 py-1.5 border-b border-green-500/10 flex gap-1 flex-wrap items-center bg-black">
-                        ${statusHints}
+                    <div class="flex items-center justify-between text-[11px] text-vs-muted w-full px-5">
+                        <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-2.5 h-2.5"></i> ${formatBytes(log.size_bytes)}</span>
+                        <span>${formatDate(log.modified)}</span>
                     </div>
-
-                    <div class="flex-1 p-3 text-[10px] sm:text-xs font-mono break-all overflow-hidden text-green-500/60 group-hover:text-green-400 relative">
-                        <span class="opacity-50 select-none">... </span>
-                        ${escapeHtml(lastLines) || '[NO_READABLE_TEXT]'}
-                        <!-- Fade bottom -->
-                        <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black to-transparent pointer-events-none"></div>
-                    </div>
-                    
-                    <div class="p-2 border-t border-green-500/20 bg-black flex items-center justify-between text-[10px] text-green-500/50 mt-auto">
-                        <div class="flex items-center gap-3">
-                            <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> ${formatBytes(log.size_bytes)}</span>
-                            <span class="flex items-center gap-1 hidden sm:flex"><i data-lucide="clock" class="w-3 h-3"></i> ${formatDate(log.modified)}</span>
-                        </div>
-                        <button onclick="openModal('${encodeURIComponent(JSON.stringify(log))}')" class="btn-hacker px-3 py-1 !text-cyan-400 !border-cyan-500/30">
-                            [VIEW_DUMP]
-                        </button>
-                    </div>
-                </div>
+                </button>
             `}).join('');
 
             lucide.createIcons();
         }
 
-        function showError(msg) {
-            DOM.logsContainer.innerHTML = `
-                <div class="col-span-full h-full min-h-[40vh] flex flex-col items-center justify-center text-red-500">
-                    <div class="bg-red-900/20 p-4 border border-red-500/50 mb-4 animate-pulse">
-                        <i data-lucide="alert-triangle" class="w-12 h-12 text-red-500"></i>
-                    </div>
-                    <p class="font-bold text-red-500 text-lg mb-1 tracking-widest">[SYSTEM_FAILURE]</p>
-                    <p class="text-red-400/70 text-sm max-w-md text-center font-mono">${msg}</p>
-                </div>
-            `;
-            lucide.createIcons();
+        // --- SYNTAX HIGHLIGHTING ENGINE ESTILO VSCODE ---
+        // Funções para escapar e parsear o log recebido em visualização rica Colorida
+        const escapeHtml = (unsafe) => unsafe
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+        function highlightLogLine(line) {
+            let html = escapeHtml(line);
+            
+            // 1. Strings em Aspas: "valor" ou 'valor' (Verde - Ponto crucial)
+            html = html.replace(/(&quot;.*?&quot;|&#039;.*?&#039;)/g, '<span class="hl-string">$1</span>');
+
+            // 2. Chaves de Array / Variáveis Nativas: $_POST, $_SESSION, $totalPorNome
+            html = html.replace(/(\$[A-Za-z0-9_]+)/g, '<span class="hl-var">$1</span>');
+
+            // 3. Timestamps: [05-Feb-2026 04:52:09 UTC]
+            html = html.replace(/(\[[0-9]{2}-[a-zA-Z]{3}-[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [A-Z]{3,4}\])/g, '<span class="hl-timestamp">$1</span>');
+
+            // 4. Paths Unix (/home/...) com highlight especial no nome do arquivo
+            html = html.replace(/(\/home[A-Za-z0-9_.\/-]+\/[A-Za-z0-9_.-]+\.php)\b/g, '<span class="hl-path" title="Path no servidor">$1</span>');
+
+            // 5. Nomes de Função / Palavras conhecidas PHP: PHP Warning, PHP Parse error, Undefined array key
+            const funcsAndKeywords = ['PHP Warning:', 'PHP Fatal error:', 'PHP Parse error:', 'Undefined array key', 'Undefined variable', 'syntax error', 'Stack trace:', 'thrown in'];
+            for(let kw of funcsAndKeywords) {
+                // Subistituimos ignorando aspas (que ja foram pintadas)
+                let regex = new RegExp(`(${kw})(?![^<]*>|[^<>]*<\/span>)`, 'g');
+                
+                let cssClass = 'hl-keyword';
+                if(kw.includes('Warning') || kw.includes('Undefined')) cssClass = 'hl-warning';
+                if(kw.includes('Fatal') || kw.includes('Parse error') || kw.includes('thrown')) cssClass = 'hl-error';
+
+                html = html.replace(regex, `<span class="${cssClass}">$1</span>`);
+            }
+
+            return html;
         }
 
-        // Advanced parser to highlight lines for the Detailed view
-        function parseLogContentFull(content) {
-            if (!content) return '> NO_DATA_STREAM';
-            
-            const lines = content.split('\\n');
-            let parsedHtml = '';
-            let errC = 0, warnC = 0;
-            
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i];
-                if (!line.trim()) continue;
-                
-                let lower = line.toLowerCase();
-                let className = 'text-green-400/80 mb-1 border-l border-green-500/20 pl-2';
-                let iconHtml = '';
-                let extraPrefix = '';
+        function parseToConsoleHTML(rawText) {
+            if (!rawText) return { html: '<div class="text-vs-muted italic px-4">Arquivo sem conteúdo disponível...</div>', e:0, w:0 };
 
-                // Classification Rules
-                if (lower.includes('fatal error') || lower.includes('uncaught error') || lower.includes('exception')) {
-                    className = 'fatal-block mb-2 py-1 pl-2 border-l-4 font-bold';
-                    iconHtml = '<span class="mr-2 opacity-80">[FATAL_ERR]</span>';
-                    errC++;
-                } else if (lower.includes("doesn't exist") && lower.includes("table")) {
-                    className = 'fatal-block mb-2 py-1 pl-2 border-l-4 font-black';
-                    iconHtml = '<span class="mr-2 animate-pulse">[DB_FATAL]</span>';
-                    errC++;
-                } else if (lower.includes('warning') || lower.includes('undefined array key') || lower.includes('notice')) {
-                    className = 'warn-block mb-1 py-1 pl-2 border-l-2';
-                    iconHtml = '<span class="mr-2 opacity-80">[WARN/NOTICE]</span>';
-                    warnC++;
-                } else if (lower.includes('parse error') || lower.includes('syntax error')) {
-                    className = 'warn-block mb-2 py-1 pl-2 border-l-4 !border-orange-500 !text-orange-400 font-bold';
-                    iconHtml = '<span class="mr-2 opacity-80">[SYNTAX_ERR]</span>';
-                    errC++;
+            let errCount = 0;
+            let warnCount = 0;
+            let finalHtml = '';
+            
+            // Ocultar marca final gerada caso seja tail cortado as vezes do servidor apache
+            const lines = rawText.split('\\n');
+
+            for (let i = 0; i < lines.length; i++) {
+                const ln = lines[i];
+                if (!ln.trim() && i === lines.length -1) continue; // ignora quebra final
+
+                const lower = ln.toLowerCase();
+                let rowWrapperClass = "log-line";
+
+                // Classificação da linha para aplicar background de alerta
+                if (lower.includes('fatal error') || lower.includes('parse error') || lower.includes('uncaught error') || lower.includes("doesn't exist")) {
+                    rowWrapperClass += " row-critical";
+                    errCount++;
+                } 
+                else if (lower.includes('warning') || lower.includes('notice')) {
+                    rowWrapperClass += " row-warning";
+                    warnCount++;
                 }
-                
-                // Specific Logic Highlights
-                if (lower.includes('mail') || lower.includes('smtp')) {
-                    if (lower.includes('fail') || lower.includes('error')) {
-                        className = 'mail-fail-block mb-2 py-1 pl-2 border-l-4';
-                        iconHtml = '<span class="mr-2">[SMTP_CRITICAL]</span>';
-                        errC++;
+                else if (lower.includes('mail') || lower.includes('smtp')) {
+                    if (lower.includes('error') || lower.includes('fail')) {
+                        rowWrapperClass += " row-critical";
+                        errCount++;
                     } else {
-                        className = 'mail-block mb-1 pl-2 border-l-2';
-                        iconHtml = '<span class="mr-2">[SMTP_TRACE]</span>';
+                        rowWrapperClass += " row-mail";
                     }
                 }
-                if (lower.includes('file not found') || lower.includes('no such file')) {
-                    className = 'info-block mb-1 py-1 pl-2 border-l-4 font-bold text-cyan-300';
-                    iconHtml = '<span class="mr-2">[MISSING_FILE]</span>';
-                    errC++;
-                }
 
-                parsedHtml += `<div class="${className} font-mono leading-relaxed break-all hover:bg-white/5 transition-colors group">
-                    <span class="text-green-700/50 mr-2 inline-block w-8 text-right select-none group-hover:text-green-500">${i+1}</span>
-                    ${iconHtml}${escapeHtml(line)}
+                // Processa a pintura linha a linha
+                const pLine = highlightLogLine(ln);
+
+                finalHtml += `
+                <div class="${rowWrapperClass}">
+                    <div class="log-num">${i+1}</div>
+                    <div class="flex-1 whitespace-pre-wrap word-break-all">${pLine || '&nbsp;'}</div>
                 </div>`;
             }
-            
-            return { html: parsedHtml, errC, warnC };
+
+            return { html: finalHtml, e: errCount, w: warnCount };
         }
 
-        function openModal(logStrEnc) {
+        function openConsole(logStrEnc) {
             try {
                 const log = JSON.parse(decodeURIComponent(logStrEnc));
-                DOM.modalTitle.textContent = log.file;
-                DOM.modalMeta.innerHTML = `<i data-lucide="hard-drive" class="w-3 h-3"></i> <span>SIZE: ${formatBytes(log.size_bytes)} | TS: ${formatDate(log.modified)}</span>`;
                 
-                const parseRs = parseLogContentFull(log.preview);
-                
-                DOM.modalBody.innerHTML = parseRs.html || 'ERR_NO_DATA';
-                DOM.errCount.innerText = `ERRORS_DETECTED: ${parseRs.errC}`;
-                if(parseRs.errC > 0) DOM.errCount.classList.add('text-red-500', 'font-bold', 'animate-pulse');
-                else DOM.errCount.classList.remove('text-red-500', 'font-bold', 'animate-pulse');
+                DOM.views.consoleEmpty.classList.add('hidden');
+                DOM.views.consoleActive.classList.remove('hidden');
+                DOM.views.consoleActive.classList.add('flex');
+                DOM.views.consoleActive.classList.add('slide-in-right');
 
-                DOM.warnCount.innerText = `WARNINGS: ${parseRs.warnC}`;
-
-                DOM.modal.classList.remove('hidden');
+                DOM.console.filename.textContent = log.file;
+                DOM.console.statusSize.textContent = formatBytes(log.size_bytes);
                 
-                // Trigger reflow to animate in
-                void DOM.modal.offsetWidth; 
+                // Parseamento das informações e contadores
+                const parsed = parseToConsoleHTML(log.preview);
+                DOM.console.body.innerHTML = parsed.html;
                 
-                DOM.modal.classList.remove('opacity-0');
-                DOM.modalContent.classList.remove('opacity-0', 'scale-95');
-                DOM.modalContent.classList.add('scale-100');
+                DOM.console.statusErrs.textContent = `${parsed.e} Erros`;
+                DOM.console.statusWarns.textContent = `${parsed.w} Avisos`;
+                
+                // Piscar vermelho se for crítico
+                if(parsed.e > 0) DOM.console.statusErrs.parentElement.classList.add('bg-vs-red', 'px-2', 'rounded-full');
+                else DOM.console.statusErrs.parentElement.classList.remove('bg-vs-red', 'px-2', 'rounded-full');
 
-                lucide.createIcons();
-            } catch(e) { console.error(e); }
+                // Animar remover a class caso trocar de card rapidão
+                setTimeout(() => DOM.views.consoleActive.classList.remove('slide-in-right'), 300);
+
+            } catch(e) { console.error('Falha ao abrir log:', e); }
         }
 
-        function closeModal() {
-            DOM.modal.classList.add('opacity-0');
-            DOM.modalContent.classList.remove('scale-100');
-            DOM.modalContent.classList.add('opacity-0', 'scale-95');
-            
-            setTimeout(() => {
-                DOM.modal.classList.add('hidden');
-                DOM.modalBody.innerHTML = '';
-            }, 300);
+        function closeConsole() {
+            DOM.views.consoleEmpty.classList.remove('hidden');
+            DOM.views.consoleActive.classList.add('hidden');
+            DOM.views.consoleActive.classList.remove('flex');
+            DOM.console.body.innerHTML = '';
         }
 
-        function copyLogContent() {
-            // Need plain text without html tags
-            let text = DOM.modalBody.innerText.replace(/^[ \\t]*\\d+[ \\t]+/gm, ''); // crude remove line numbers
+        function copyConsoleOutput() {
+            // Pegamos apenas o texto, pulando a col de numeros
+            let text = DOM.console.body.innerText;
+            // Remover os numeros de linha iniciais de forma simples
+            text = text.replace(/^[0-9]+[ \\t]*/gm, '');
+
             navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('copy-btn');
+                const btn = document.getElementById('btn-copy');
                 const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-400"></i><span>[YANK_SUCCESS]</span>';
-                btn.classList.add('!border-green-400', '!text-green-400');
+                btn.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-vs-green"></i> <span class="text-vs-green">Copiado</span>';
+                btn.classList.add('border-vs-green/30', 'bg-vs-green/10');
                 lucide.createIcons();
+                
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
-                    btn.classList.remove('!border-green-400', '!text-green-400');
+                    btn.classList.remove('border-vs-green/30', 'bg-vs-green/10');
                     lucide.createIcons();
                 }, 2000);
-            }).catch(e => console.error('Failed to copy', e));
+            }).catch(e => console.error('Erro de cópia', e));
         }
 
+        // Eventos Globais
         DOM.searchInput.addEventListener('input', () => setTimeout(renderLogs, 300));
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !DOM.modal.classList.contains('hidden')) closeModal();
-        });
 
-        // Init
+        // Start
         renderProjects();
-        // default select first if wanted, or let it 'AWAITING_TARGET_SELECTION'
     </script>
 </body>
 </html>
