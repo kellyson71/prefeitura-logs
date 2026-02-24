@@ -1,145 +1,187 @@
-/* assets/css/theme.css */
+@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap");
 
 /*
- * VSCode Dark Theme Colors Settings
- * Paleta fiel do tema Dark+ do Visual Studio Code.
+ * eDEX-UI / SCI-FI THEME SETTINGS
+ * Focado em tons de Cyan/Teal Escuro com Neon Glows 
+ * para um visual HUD / Hacker Analítico realista.
  */
 :root {
-    --vs-bg: #1e1e1e;
-    --vs-panel: #252526;
-    --vs-sidebar: #333333;
-    --vs-border: #444444;
-    --vs-text: #cccccc; /* Texto base padrão */
-    --vs-muted: #858585; /* Comentários/Infos fracas */
-    --vs-blue-link: #3794ff; /* Links/Paths */
-    --vs-blue: #9cdcfe; /* Variáveis */
-    --vs-green: #ce9178; /* Strings reais (laranja claro no VSCode) */
-    --vs-yellow: #dcdcaa; /* Functions */
-    --vs-orange: #d7ba7d; /* Keywords alert */
-    --vs-red: #f44747; /* Errors */
-    --vs-purple: #c586c0; /* Keywords de controle */
-    --vs-cyan: #4ec9b0; /* Tipos/Classes */
+    --bg-dark: #03080c;
+    --panel-bg: rgba(6, 17, 24, 0.7);
+    --panel-border: rgba(0, 240, 255, 0.15);
+
+    --neon-cyan: #00f0ff;
+    --neon-green: #00ff88;
+    --neon-red: #ff0055;
+    --neon-orange: #ffaa00;
+    --neon-purple: #b000ff;
+
+    --text-main: #d3ebed;
+    --text-dim: #3a6875;
+
+    /* IDE Colors (Mantine/VSCode) para o texto LIMPOS E LEGIVEIS */
+    --hl-string: #a3be8c; /* Verde opaco */
+    --hl-var: #88c0d0; /* Azul glacial */
+    --hl-func: #ebcb8b; /* Amarelo ouro */
+    --hl-keyword: #b48ead; /* Roxo suave */
+    --hl-path: #5e81ac; /* Azul escuro link */
+    --hl-time: #4c566a; /* Cinza claro */
 }
 
+/* ==================
+   GLOBAL & LAYOUT
+   ================== */
 body {
-    background-color: var(--vs-bg);
-    color: var(--vs-text);
+    background-color: var(--bg-dark);
+    color: var(--text-main);
     overflow: hidden;
+    font-family: "Rajdhani", sans-serif;
+
+    /* Background Sci-Fi Grid */
+    background-image:
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    background-position: center;
 }
 
-/* Scrollbars VSCode Style */
+h1,
+h2,
+h3,
+.font-tech {
+    font-family: "Share Tech Mono", monospace;
+}
+
+/* Custom Cyber Scrollbars */
 ::-webkit-scrollbar {
-    width: 14px;
-    height: 14px;
+    width: 8px;
+    height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: var(--vs-bg);
+    background: rgba(0, 0, 0, 0.5);
+    border-left: 1px solid var(--panel-border);
 }
 ::-webkit-scrollbar-thumb {
-    background: #424242;
-    border: 4px solid var(--vs-bg);
-    border-radius: 8px;
+    background: var(--text-dim);
+    border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #4f4f4f;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 10px var(--neon-cyan);
 }
 ::-webkit-scrollbar-corner {
-    background: var(--vs-bg);
+    background: transparent;
 }
 
-/* Utility Classes and Animations */
+/* ==================
+   UI COMPONENT CLASSES
+   ================== */
+.hud-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(8px);
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.02);
+}
+
+.hud-panel::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 6px;
+    border-top: 1px solid var(--neon-cyan);
+    border-left: 1px solid var(--neon-cyan);
+}
+.hud-panel::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 6px;
+    height: 6px;
+    border-bottom: 1px solid var(--neon-cyan);
+    border-right: 1px solid var(--neon-cyan);
+}
+
+.glitch-text {
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+/* Animações Keyframe Modernas */
 .fade-in {
-    animation: fadeIn 0.2s ease-out forwards;
+    animation: fadeIn 0.4s ease-out forwards;
 }
 @keyframes fadeIn {
     from {
         opacity: 0;
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
+        transform: translateY(0);
     }
 }
 
-.slide-in-right {
-    animation: slideIn 0.2s ease-out forwards;
+.pulse-glow {
+    animation: pulseGlow 2s infinite alternate;
 }
-@keyframes slideIn {
+@keyframes pulseGlow {
     from {
-        opacity: 0;
-        transform: translateX(10px);
+        box-shadow: 0 0 5px rgba(0, 255, 136, 0.2);
     }
     to {
-        opacity: 1;
-        transform: translateX(0);
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
     }
 }
 
-/* Base Classes */
-.bg-vs-bg {
-    background-color: var(--vs-bg);
+.pulse-glow-red {
+    animation: pulseGlowRed 1.5s infinite alternate;
 }
-.bg-vs-panel {
-    background-color: var(--vs-panel);
-}
-.bg-vs-sidebar {
-    background-color: var(--vs-sidebar);
-}
-.border-vs-border {
-    border-color: var(--vs-border);
-}
-
-.text-vs-text {
-    color: var(--vs-text);
-}
-.text-vs-muted {
-    color: var(--vs-muted);
-}
-.text-vs-blue {
-    color: var(--vs-blue-link);
+@keyframes pulseGlowRed {
+    from {
+        box-shadow: 0 0 5px rgba(255, 0, 85, 0.2);
+        border-color: rgba(255, 0, 85, 0.4);
+    }
+    to {
+        box-shadow: 0 0 25px rgba(255, 0, 85, 0.7);
+        border-color: var(--neon-red);
+    }
 }
 
-/* Navigation & Sidebar Items */
+/* NavBar da Esquerda */
 .nav-item {
-    transition: all 0.1s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     border-left: 2px solid transparent;
+    color: var(--text-dim);
 }
 .nav-item.active {
-    background-color: #37373d;
-    color: #ffffff;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.15) 0%, transparent 100%);
+    border-left-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    font-weight: 600;
 }
 .nav-item:hover:not(.active) {
-    background-color: #2a2d2e;
+    background: rgba(0, 240, 255, 0.05);
+    color: var(--text-main);
 }
 
-/* Log Cards Style */
-.log-card {
-    background-color: var(--vs-panel);
-    border: 1px solid var(--vs-border);
-    transition:
-        background-color 0.1s,
-        border-color 0.1s;
-    cursor: pointer;
-}
-.log-card:hover {
-    background-color: #2a2d2e;
-    border-color: #555555;
-}
-
-/* 
- * TABS SYSTEM CLASSES 
- */
+/* Tabs */
 .tab-btn {
-    color: var(--vs-muted);
-    border-bottom: 1px solid transparent;
-    transition: all 0.1s;
+    color: var(--text-dim);
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
 }
 .tab-btn:hover {
-    color: var(--vs-text);
+    color: var(--text-main);
 }
 .tab-btn.active {
-    color: #ffffff;
-    border-bottom-color: var(--vs-blue-link);
+    color: var(--neon-cyan);
+    border-bottom-color: var(--neon-cyan);
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
 }
+
 .tab-content {
     display: none;
 }
@@ -147,19 +189,49 @@ body {
     display: flex;
 }
 
-/* 
- * SYNTAX HIGHLIGHTING (VSCODE DARK THEME - NO SOLID BACKGROUNDS)
- */
+/* Log Cards - Lateral */
+.log-card {
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--panel-border);
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+.log-card:hover {
+    border-color: var(--neon-cyan);
+    background-color: rgba(0, 240, 255, 0.05);
+}
+.log-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: var(--neon-cyan);
+    transform: scaleY(0);
+    transition: transform 0.2s;
+}
+.log-card:hover::before {
+    transform: scaleY(1);
+}
+
+/* ==================
+   IDE CONSOLE - TEXT & HIGHLIGHTS
+   ================== */
 .log-line {
     display: flex;
     padding: 0 1rem;
-    min-height: 1.35rem; /* Menor altura pra caber mais */
+    min-height: 1.35rem;
     position: relative;
+    font-family: "Share Tech Mono", monospace;
     font-size: 13px;
     line-height: 1.5;
+    color: var(--text-main);
 }
 .log-line:hover {
-    background-color: #2a2d2e;
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .log-num {
@@ -167,54 +239,61 @@ body {
     flex-shrink: 0;
     text-align: right;
     padding-right: 1.5rem;
-    color: #858585; /* Igual numero de linha no vsc */
+    color: var(--text-dim);
     user-select: none;
     margin-right: 0.5rem;
+    border-right: 1px solid rgba(0, 240, 255, 0.1);
 }
 
-/* Core Colors based on regex matches */
+/* Texto limpo e colorido sem afetar fundos */
 .hl-timestamp {
-    color: var(--vs-muted);
+    color: var(--hl-time);
 }
 .hl-path {
-    color: var(--vs-blue-link);
+    color: var(--hl-path);
     text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: 0.2s;
     cursor: pointer;
 }
+.hl-path:hover {
+    text-decoration-color: var(--hl-path);
+}
 .hl-string {
-    color: var(--vs-green);
+    color: var(--hl-string);
 }
 .hl-var {
-    color: var(--vs-blue);
+    color: var(--hl-var);
 }
 .hl-keyword {
-    color: var(--vs-purple);
+    color: var(--hl-keyword);
 }
 .hl-func {
-    color: var(--vs-yellow);
+    color: var(--hl-func);
 }
 .hl-type {
-    color: var(--vs-cyan);
+    color: var(--neon-cyan);
 }
 
-/* Severities & Actions */
 .hl-error {
-    color: var(--vs-red);
+    color: var(--neon-red);
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
 }
 .hl-warning {
-    color: var(--vs-orange);
+    color: var(--neon-orange);
 }
 .hl-info {
-    color: var(--vs-blue-link);
+    color: var(--hl-path);
 }
 
-/* Borda esquerda discreta para avisos cruciais, sem pintar o fundo inteiro */
+/* Marcador fino lateral (para avisos e erros) */
 .row-critical {
-    border-left: 3px solid var(--vs-red);
+    border-left: 2px solid var(--neon-red);
 }
 .row-warning {
-    border-left: 3px solid var(--vs-orange);
+    border-left: 2px solid var(--neon-orange);
 }
 .row-mail {
-    border-left: 3px solid var(--vs-purple);
+    border-left: 2px solid var(--neon-purple);
 }
