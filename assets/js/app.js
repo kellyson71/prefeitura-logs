@@ -20,7 +20,8 @@ const state = {
         { id: "api_estagiopaudosferros_com", name: "API Estágio" },
         { id: "api_protocolosead_com", name: "API Protocolo" },
     ],
-    activeTab: "logs", // 'dashboard' ou 'logs'
+    activeTab: "logs",
+    currentFilter: "all", // all | error | warn
 };
 
 const DOM = {
@@ -40,18 +41,24 @@ const DOM = {
     tabContentDashboard: document.getElementById("tab-content-dashboard"),
     tabContentLogs: document.getElementById("tab-content-logs"),
 
-    // Componentes da Aba Logs
+    // Componentes da Aba Logs e Console
     searchInput: document.getElementById("search-input"),
     consoleEmpty: document.getElementById("console-empty"),
     consoleActive: document.getElementById("console-active"),
     consoleTitle: document.getElementById("console-title"),
     consoleBody: document.getElementById("console-body"),
 
-    // Estatísticas da Dashboard
+    // Estatísticas da Dashboard e Banner Saúde
     statTotalLogs: document.getElementById("stat-total-logs"),
     statTotalSize: document.getElementById("stat-total-size"),
     statErrors: document.getElementById("stat-errors"),
     statWarns: document.getElementById("stat-warns"),
+
+    healthBanner: document.getElementById("health-banner"),
+    healthIconBg: document.getElementById("health-icon-bg"),
+    healthIcon: document.getElementById("health-icon"),
+    healthTitle: document.getElementById("health-title"),
+    healthDesc: document.getElementById("health-desc"),
 
     spinner: document.getElementById("global-spinner"),
 };
@@ -119,7 +126,6 @@ function selectProject(projectId) {
     closeConsole();
     renderProjectsSidebar();
 
-    // Força ir pra tab de Resumo ao trocar projeto
     switchTab("dashboard");
     loadLogsFromApi();
 }
@@ -137,7 +143,7 @@ function switchTab(tabId) {
 }
 
 // ==========================================
-// API FETCH E DASHBOARD
+// API FETCH E DASHBOARD (Health Status)
 // ==========================================
 async function loadLogsFromApi() {
     if (!state.currentProject) return;
@@ -154,7 +160,8 @@ async function loadLogsFromApi() {
             updateDashboardStats();
             renderLogCards();
         } else {
-            DOM.logsContainer.innerHTML = `<div class="text-xs text-[#f44747] p-3 text-center">API Retornou Erro: ${data.error || "Nulo"}</div>`;
+            DOM.logsContainer.innerHTML = `<div class="text-[11px] text-[#f44747] p-3 text-center">Nenhum dado retornado ou projeto vazio.</div>`;
+            setHealthStatus("ok", "Nenhum log encontrado para ler.");
         }
     } catch (error) {
         console.error(error);
@@ -164,7 +171,66 @@ async function loadLogsFromApi() {
     }
 }
 
-// Calcula estatísticas rápiadas baseadas nas previews de log para montar a Dashboard
+function setHealthStatus(level, message = "") {
+    DOM.healthBanner.classList.remove(
+        "hidden",
+        "bg-[#1e2e22]",
+        "bg-[#3d1d1d]",
+        "bg-[#302717]",
+        "border-[#3fb950]/30",
+        "border-[#f44747]/30",
+        "border-[#d7ba7d]/30",
+    );
+    DOM.healthIconBg.classList.remove("bg-[#3fb950]", "bg-[#f44747]", "bg-[#d7ba7d]", "animate-pulse");
+
+    if (level === "ok") {
+        DOM.healthBanner.classList.add("bg-[#1e2e22]", "border-[#3fb950]/30");
+        DOM.healthIconBg.classList.add("bg-[#3fb950]");
+        DOM.healthIcon.setAttribute("data-lucide", "check-circle");
+        DOM.healthTitle.textContent = "Sistema Estável e Saudável";
+        DOM.healthDesc.textContent =
+            message || "Não detectamos erros de sintaxe ou alertas graves nas prévias recentes.";
+    } else if (level === "warn") {
+        DOM.healthBanner.classList.add("bg-[#302717]", "border-[#d7ba7d]/30");
+        DOM.healthIconBg.classList.add("bg-[#d7ba7d]");
+        DOM.healthIcon.setAttribute("data-lucide", "alert-triangle");
+        DOM.healthTitle.textContent = "Sistema Estabilizado, Mas Requer Atenção";
+        DOM.healthDesc.textContent =
+            message || 'Há "Notices" ou "Warnings" do PHP sendo gerados. O sistema roda, mas pode haver lentidão.';
+    } else if (level === "critical") {
+        DOM.healthBanner.classList.add("bg-[#3d1d1d]", "border-[#f44747]/30");
+        DOM.healthIconBg.classList.add("bg-[#f44747]", "animate-pulse");
+        DOM.healthIcon.setAttribute("data-lucide", "siren");
+        DOM.healthTitle.textContent = "Falha(s) Crítica(s) Detectada(s)!";
+        DOM.healthDesc.textContent =
+            message || "O projeto possui Erros Fatais ou Exceções recentes que provavelmente estão quebrando páginas.";
+    }
+
+    lucide.createIcons();
+}
+
+function countKeywords(textLines) {
+    let errs = 0,
+        warns = 0;
+    const lower = (textLines || "").toLowerCase();
+    const lines = lower.split("\\n");
+
+    for (let i = 0; i < lines.length; i++) {
+        if (
+            lines[i].includes("fatal error") ||
+            lines[i].includes("uncaught error") ||
+            lines[i].includes("doesn't exist") ||
+            lines[i].includes("parse error") ||
+            lines[i].includes("smtp error")
+        ) {
+            errs++;
+        } else if (lines[i].includes("warning") || lines[i].includes("notice")) {
+            warns++;
+        }
+    }
+    return { errs, warns };
+}
+
 function updateDashboardStats() {
     DOM.statTotalLogs.textContent = state.logs.length;
 
@@ -174,23 +240,28 @@ function updateDashboardStats() {
     let totalE = 0;
     let totalW = 0;
 
-    // Leitura rasa das previews de todos os arquivos do projeto
     state.logs.forEach(log => {
-        const lower = (log.preview || "").toLowerCase();
-
-        // Estima erros pelo preview cortado (nao e 100% preciso, mas util p dash)
-        if (lower.includes("fatal error") || lower.includes("uncaught error")) totalE++;
-        if (lower.includes("doesn't exist") || lower.includes("fail")) totalE++;
-
-        if (lower.includes("warning") || lower.includes("notice")) totalW++;
+        const counts = countKeywords(log.preview);
+        totalE += counts.errs;
+        totalW += counts.warns;
     });
 
-    DOM.statErrors.textContent = totalE > 0 ? `+${totalE} (Estimados)` : "Zero rastreados";
-    DOM.statWarns.textContent = totalW > 0 ? `+${totalW} (Estimados)` : "Nenhum recente";
+    DOM.statErrors.textContent = totalE;
+    DOM.statWarns.textContent = totalW;
+
+    // Atualiza Banner Superior
+    if (totalE > 0)
+        setHealthStatus(
+            "critical",
+            `Encontramos ±${totalE} blocos de erro que requerem averiguação imetita no Console.`,
+        );
+    else if (totalW > 0)
+        setHealthStatus("warn", `Existem ±${totalW} avisos de Notice e Variáveis ou Chaves sem definição.`);
+    else setHealthStatus("ok");
 }
 
 // ==========================================
-// RENDERIZAÇÃO DE LISTA DE LOGS E CONSOLE
+// RENDERIZAÇÃO DE LISTA C/ BADGES
 // ==========================================
 function renderLogCards() {
     let filtered = [...state.logs];
@@ -198,36 +269,43 @@ function renderLogCards() {
     if (term) filtered = filtered.filter(l => l.file.toLowerCase().includes(term));
 
     if (filtered.length === 0) {
-        DOM.logsContainer.innerHTML = `
-            <div class="col-span-full text-center py-10 text-vs-muted fade-in">
-                <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
-                <p class="text-xs">Nenhum log corresponde ao filtro ou o projeto está vazio.</p>
-            </div>
-        `;
-        lucide.createIcons();
+        DOM.logsContainer.innerHTML = `<div class="text-center py-6 text-vs-muted"><p class="text-[11px]">Vazio.</p></div>`;
         return;
     }
 
     DOM.logsContainer.innerHTML = filtered
         .map(log => {
-            const previewLower = log.preview.toLowerCase();
-            const pathMatch = log.file.split("_")[1] || ""; // ex error_log_demutran.com
+            // Conta no pré-visualizador
+            const counts = countKeywords(log.preview);
 
-            // Determina se a preview do arquivo aponta algo critico
             let leftBorder = "border-transparent";
-            if (previewLower.includes("fatal error") || previewLower.includes("fail")) leftBorder = "border-[#f44747]";
-            else if (previewLower.includes("warning")) leftBorder = "border-[#d7ba7d]";
+            let badgesHtml = "";
+
+            if (counts.errs > 0) {
+                leftBorder = "border-[#f44747]";
+                badgesHtml += `<span class="bg-[#f44747]/20 text-[#f44747] text-[9px] px-1.5 py-0.5 rounded mr-1">${counts.errs} Err</span>`;
+            }
+            if (counts.warns > 0) {
+                if (leftBorder === "border-transparent") leftBorder = "border-[#d7ba7d]";
+                badgesHtml += `<span class="bg-[#d7ba7d]/20 text-[#d7ba7d] text-[9px] px-1.5 py-0.5 rounded mr-1">${counts.warns} Wrn</span>`;
+            }
 
             return `
-        <div onclick="openConsole('${encodeURIComponent(JSON.stringify(log))}')" class="log-card p-3 rounded-md flex flex-col gap-2 border-l-2 ${leftBorder} fade-in">
-            <div class="flex items-center gap-2">
-                <i data-lucide="file-json" class="w-4 h-4 text-[#ce9178] shrink-0"></i>
-                <span class="text-sm font-medium text-[#c9d1d9] truncate" title="${log.file}">${log.file}</span>
+        <div onclick="openConsole('${encodeURIComponent(JSON.stringify(log))}')" class="log-card p-2.5 rounded flex flex-col gap-1.5 border-l-2 ${leftBorder} fade-in">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1.5 min-w-0 pr-2">
+                    <i data-lucide="file-json" class="w-3.5 h-3.5 text-[#ce9178] shrink-0"></i>
+                    <span class="text-[12px] font-medium text-[#c9d1d9] truncate" title="${log.file}">${log.file}</span>
+                </div>
+                <!-- Mini Badges de Aviso -->
+                <div class="flex shrink-0 ml-1">
+                    ${badgesHtml}
+                </div>
             </div>
             
-            <div class="flex items-center justify-between text-[11px] text-[#858585]">
-                <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> ${formatBytes(log.size_bytes)}</span>
-                <span>Últ. Mod: ${formatDate(log.modified)}</span>
+            <div class="flex items-center justify-between text-[10px] text-[#858585]">
+                <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-2.5 h-2.5"></i> ${formatBytes(log.size_bytes)}</span>
+                <span>Mod: ${formatDate(log.modified)}</span>
             </div>
         </div>
     `;
@@ -238,9 +316,41 @@ function renderLogCards() {
 }
 
 // ==========================================
-// VSCODE SYNTAX HIGHLIGHT ENGINE
-// (FUNDO PRETO, TEXTO COLORIDO EM PT-BR)
+// FILTROS E CONSOLE (AUTO SCROLL) E VSCODE ENGINE
 // ==========================================
+function setConsoleFilter(type) {
+    state.currentFilter = type;
+
+    // Atualiza Buttons Visuais
+    document.getElementById("filter-all").className =
+        `px-3 py-1.5 cursor-pointer ${type === "all" ? "text-white bg-[#37373d]" : "hover:bg-white/5 text-vs-muted"}`;
+    document.getElementById("filter-error").className =
+        `px-3 py-1.5 cursor-pointer flex items-center gap-1.5 ${type === "error" ? "text-white bg-[#37373d]" : "hover:bg-white/5 text-vs-muted"}`;
+    document.getElementById("filter-warn").className =
+        `px-3 py-1.5 cursor-pointer flex items-center gap-1.5 ${type === "warn" ? "text-white bg-[#37373d]" : "hover:bg-white/5 text-vs-muted"}`;
+
+    // Aplica visibilidade via CSS nas linhas ativas
+    const lines = DOM.consoleBody.querySelectorAll(".log-line");
+
+    // Otimizando dom reflow
+    DOM.consoleBody.style.display = "none";
+
+    lines.forEach(line => {
+        if (type === "all") {
+            line.style.display = "flex";
+        } else if (type === "error") {
+            line.style.display = line.classList.contains("row-critical") ? "flex" : "none";
+        } else if (type === "warn") {
+            line.style.display = line.classList.contains("row-warning") ? "flex" : "none";
+        }
+    });
+
+    DOM.consoleBody.style.display = "block";
+
+    // Rolar p/ baixo caso mudou pro erro
+    setTimeout(scrollToBottom, 50);
+}
+
 const escapeHtml = unsafe =>
     unsafe
         .replace(/&/g, "&amp;")
@@ -253,8 +363,6 @@ function buildVscodeLine(lineRaw, lineNum) {
     if (!lineRaw.trim()) return "";
 
     let lower = lineRaw.toLowerCase();
-
-    // Extra classes just for the left border marker, NOT full background
     let rowClass = "log-line";
 
     if (lower.includes("fatal error") || lower.includes("uncaught error") || lower.includes("doesn't exist")) {
@@ -265,24 +373,21 @@ function buildVscodeLine(lineRaw, lineNum) {
         rowClass += lower.includes("fail") || lower.includes("error") ? " row-critical" : " row-mail";
     }
 
+    // Se estivermos abrindo já filtrado, esconde aquilo que não bater com o filtro global
+    let inlineStyle = "";
+    if (state.currentFilter === "error" && !rowClass.includes("row-critical")) inlineStyle = "display:none;";
+    else if (state.currentFilter === "warn" && !rowClass.includes("row-warning")) inlineStyle = "display:none;";
+
     let html = escapeHtml(lineRaw);
 
-    // 1. Strings literais -> Laranja/Verde
     html = html.replace(/(&quot;.*?&quot;|&#039;.*?&#039;)/g, '<span class="hl-string">$1</span>');
-
-    // 2. Variáveis de PHP ($variavel) -> Azul claro
     html = html.replace(/(\$[A-Za-z0-9_]+)/g, '<span class="hl-var">$1</span>');
-
-    // 3. Timestamps [Data Hora] -> Cinza Muted
     html = html.replace(/(\[[0-9a-zA-Z :-]+(?:UTC|GMT|-0300|\\+0000)?\])/g, '<span class="hl-timestamp">$1</span>');
-
-    // 4. Arquivos/Paths no servidor (ex: /home/domain/public_html/index.php) -> Azul Link Escuro
     html = html.replace(
         /(\/home[A-Za-z0-9_.\/-]+\.php)\b/g,
         '<span class="hl-path" title="Acessar sub-diretório">$1</span>',
     );
 
-    // 5. Palavras chave reservadas e tradução indireta/marcadores
     const phpErrors = [
         { rgx: "PHP Warning:", class: "hl-warning" },
         { rgx: "PHP Fatal error:", class: "hl-error" },
@@ -296,13 +401,12 @@ function buildVscodeLine(lineRaw, lineNum) {
     ];
 
     for (let e of phpErrors) {
-        // Lookahead p garantir que n mexemos dentro do span ja pintado antes
         let rule = new RegExp(`(${e.rgx})(?![^<]*>|[^<>]*<\/span>)`, "gi");
         html = html.replace(rule, `<span class="${e.class}">$1</span>`);
     }
 
     return `
-    <div class="${rowClass}">
+    <div class="${rowClass}" style="${inlineStyle}">
         <div class="log-num">${lineNum}</div>
         <div class="flex-1 whitespace-pre-wrap word-break-all">${html}</div>
     </div>`;
@@ -314,10 +418,8 @@ function openConsole(logStrEnc) {
 
         DOM.consoleEmpty.style.display = "none";
         DOM.consoleActive.style.display = "flex";
-
         DOM.consoleTitle.textContent = log.file;
 
-        // Faz o Parse Line by Line
         let finalHtml = "";
         if (log.preview) {
             const lines = log.preview.split("\\n");
@@ -332,10 +434,17 @@ function openConsole(logStrEnc) {
         }
 
         DOM.consoleBody.innerHTML =
-            finalHtml || '<div class="px-4 py-2 text-vs-muted italic">Arquivo lido é infinito ou está vazio.</div>';
+            finalHtml || '<div class="px-4 py-2 text-vs-muted italic">Arquivo sem preview gerada.</div>';
+
+        // Magica do Scroll Automatico apos abrir o Visualizador!
+        setTimeout(scrollToBottom, 50);
     } catch (e) {
         console.error("Erro ao abrir log", e);
     }
+}
+
+function scrollToBottom() {
+    DOM.consoleBody.scrollTop = DOM.consoleBody.scrollHeight;
 }
 
 function closeConsole() {
@@ -344,8 +453,31 @@ function closeConsole() {
     DOM.consoleBody.innerHTML = "";
 }
 
-// Expõe globals pro HTML caso necessario
+function copyConsoleOutput() {
+    // Para simplificar: apenas pega o innerText (que ja vem com as quebras e escondendo quem ta display:none!)
+    // Depois retiramos o bloco de numeros de linhas que ficaria feio copiado.
+    let text = DOM.consoleBody.innerText;
+    text = text.replace(/^[0-9]+[ \\t]+/gm, "");
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById("btn-copy");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML =
+            '<i data-lucide="check" class="w-3.5 h-3.5 text-[#3fb950]"></i> <span class="text-[#3fb950]">Copiado!</span>';
+        lucide.createIcons();
+
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            lucide.createIcons();
+        }, 1500);
+    });
+}
+
+// Expõe globals
 window.selectProject = selectProject;
 window.loadLogsFromApi = loadLogsFromApi;
 window.openConsole = openConsole;
 window.closeConsole = closeConsole;
+window.setConsoleFilter = setConsoleFilter;
+window.scrollToBottom = scrollToBottom;
+window.copyConsoleOutput = copyConsoleOutput;

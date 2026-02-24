@@ -52,7 +52,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
         <div class="flex items-center gap-4">
             <div id="global-spinner" class="hidden items-center gap-2 text-xs font-medium text-vs-muted">
-                <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-vs-blue"></i> Carregando...
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-vs-blue"></i> Lendo disco...
             </div>
             
             <div class="h-6 w-px bg-vs-border"></div>
@@ -100,91 +100,99 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             <div id="view-project" class="hidden flex-col h-full z-10 w-full fade-in relative">
                 
                 <!-- Navbar das Tabs -->
-                <div class="h-12 bg-vs-panel flex items-end px-6 border-b border-vs-border shrink-0 gap-6">
-                    <div class="flex items-center gap-2 text-sm text-vs-text mb-2.5 min-w-[200px]">
-                        <i data-lucide="book-open" class="w-4 h-4 text-vs-blue"></i>
-                        <span id="current-project-title" class="font-semibold truncate tracking-wider">Projeto</span>
-                    </div>
+                <div class="h-12 bg-vs-panel flex items-end px-6 border-b border-vs-border shrink-0 justify-between">
+                    <div class="flex items-center gap-6 h-full">
+                        <div class="flex items-center gap-2 text-sm text-vs-text mb-2 min-w-[150px]">
+                            <i data-lucide="folder" class="w-4 h-4 text-vs-blue"></i>
+                            <span id="current-project-title" class="font-semibold truncate tracking-wider">Projeto</span>
+                        </div>
 
-                    <!-- Botões Aba -->
-                    <button class="tab-btn active font-medium text-sm pb-2.5 px-1 flex items-center gap-2" id="tab-btn-dashboard">
-                        <i data-lucide="pie-chart" class="w-4 h-4"></i> Resumo
-                    </button>
-                    <button class="tab-btn font-medium text-sm pb-2.5 px-1 flex items-center gap-2 border-l pl-5 border-vs-border/50" id="tab-btn-logs">
-                        <i data-lucide="list-tree" class="w-4 h-4"></i> Lista de Arquivos
-                    </button>
+                        <!-- Botões Aba -->
+                        <div class="flex items-end h-full">
+                            <button class="tab-btn active font-medium text-sm pb-2.5 px-3 flex items-center gap-2" id="tab-btn-dashboard">
+                                <i data-lucide="pie-chart" class="w-4 h-4"></i> Resumo
+                            </button>
+                            <button class="tab-btn font-medium text-sm pb-2.5 px-3 flex items-center gap-2" id="tab-btn-logs">
+                                <i data-lucide="list-tree" class="w-4 h-4"></i> Detalhamento
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- CONTEÚDO TABS -->
                 <div class="flex-1 overflow-hidden relative">
                     
                     <!-- Tab 1: DASHBOARD (Resumo do Projeto) -->
-                    <div id="tab-content-dashboard" class="tab-content w-full h-full overflow-y-auto p-6 md:p-8 active fade-in">
-                        <div class="max-w-5xl mx-auto">
-                            <h2 class="text-xl font-light text-vs-text mb-6">Visão Geral do Diretório</h2>
+                    <div id="tab-content-dashboard" class="tab-content w-full h-full overflow-y-auto p-6 md:p-8 active fade-in bg-vs-bg">
+                        <div class="max-w-5xl mx-auto flex flex-col gap-6">
+                            <h2 class="text-xl font-light text-vs-text">Visão Geral do Diretório</h2>
+                            
+                            <!-- Health Status Banner -->
+                            <div id="health-banner" class="w-full flex items-center p-4 rounded-xl border opacity-90 transition-all duration-300 gap-4 shadow-lg hidden">
+                                <div id="health-icon-bg" class="w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                                    <i id="health-icon" data-lucide="activity" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span id="health-title" class="text-lg font-bold text-white tracking-wide">Calculando...</span>
+                                    <span id="health-desc" class="text-sm text-white/80">Analisando estabilidade baseada em logs recentes.</span>
+                                </div>
+                            </div>
                             
                             <!-- Cards Estatisticos -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                
-                                <div class="bg-vs-panel border border-vs-border p-5 rounded-lg flex flex-col shadow-sm">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                                <div class="bg-vs-panel border border-vs-border/50 p-5 rounded-lg flex flex-col">
                                     <span class="text-xs text-vs-muted font-bold uppercase mb-2 flex items-center gap-2">
                                         <i data-lucide="files" class="w-4 h-4 text-vs-blue"></i> Arquivos
                                     </span>
                                     <div class="text-3xl font-light text-vs-text mb-1" id="stat-total-logs">0</div>
-                                    <div class="text-[10px] text-vs-muted">Logs mapeados pela API no momento.</div>
                                 </div>
 
-                                <div class="bg-vs-panel border border-vs-border p-5 rounded-lg flex flex-col shadow-sm">
+                                <div class="bg-vs-panel border border-vs-border/50 p-5 rounded-lg flex flex-col">
                                     <span class="text-xs text-vs-muted font-bold uppercase mb-2 flex items-center gap-2">
                                         <i data-lucide="hard-drive" class="w-4 h-4 text-[#ce9178]"></i> Tamanho Ocupado
                                     </span>
                                     <div class="text-3xl font-light text-vs-text mb-1" id="stat-total-size">0 B</div>
-                                    <div class="text-[10px] text-vs-muted">Volume de armazenamento bruto do projeto.</div>
                                 </div>
 
-                                <div class="bg-vs-panel border border-vs-border p-5 rounded-lg flex flex-col shadow-sm">
+                                <div class="bg-vs-panel border border-vs-border/50 p-5 rounded-lg flex flex-col">
                                     <span class="text-xs text-vs-muted font-bold uppercase mb-2 flex items-center gap-2">
                                         <i data-lucide="alert-octagon" class="w-4 h-4 text-[#f44747]"></i> Erros Fatais
                                     </span>
-                                    <div class="text-2xl font-light text-[#f44747] mb-1 leading-tight" id="stat-errors">Calculando...</div>
-                                    <div class="text-[10px] text-vs-muted">Termos "fatal", "fails", etc contados no preview atual.</div>
+                                    <div class="text-2xl font-light text-[#f44747] mb-1 leading-tight"><span id="stat-errors">0</span> rastreados</div>
                                 </div>
 
-                                <div class="bg-vs-panel border border-vs-border p-5 rounded-lg flex flex-col shadow-sm">
+                                <div class="bg-vs-panel border border-vs-border/50 p-5 rounded-lg flex flex-col">
                                     <span class="text-xs text-vs-muted font-bold uppercase mb-2 flex items-center gap-2">
                                         <i data-lucide="alert-triangle" class="w-4 h-4 text-[#d7ba7d]"></i> Avisos (Warnings)
                                     </span>
-                                    <div class="text-2xl font-light text-[#d7ba7d] mb-1 leading-tight" id="stat-warns">Calculando...</div>
-                                    <div class="text-[10px] text-vs-muted">Sintaxes incorretas e notices do PHP detectadas.</div>
+                                    <div class="text-2xl font-light text-[#d7ba7d] mb-1 leading-tight"><span id="stat-warns">0</span> rastreados</div>
                                 </div>
-
                             </div>
                             
-                            <div class="mt-8 p-6 border border-dashed border-vs-border/60 rounded-xl bg-vs-panel/30 flex items-center gap-4 text-vs-muted">
-                                <i data-lucide="info" class="w-8 h-8 opacity-50 shrink-0"></i>
-                                <div class="text-sm">
-                                    <strong class="text-vs-text block mb-1">Como usar essa ferramenta?</strong>
-                                    Na barra de topo da tab, mude para "Lista de Arquivos" para rastrear o erro raiz e entender linha por linha na formatação original (Modo VS Code). Você pode copiar saídas diretas de lá com 1 clique e enviar como relatório de ticket.
+                            <div class="p-6 border border-dashed border-vs-border/60 rounded-xl bg-vs-panel/30 flex items-center gap-4 text-vs-muted mt-4">
+                                <i data-lucide="mouse-pointer-click" class="w-6 h-6 shrink-0 opacity-60"></i>
+                                <div class="text-sm max-w-2xl">
+                                    Vá até a aba de <strong class="text-vs-text">Detalhamento</strong> para ler as falhas em formatação de depurador (foco nos logs mais recentes) e utilizar filtros de Isolamentos (Ver apenas Erros / Apenas Avisos) instantâneos para agilizar a investigação.
                                 </div>
                             </div>
 
                         </div>
                     </div>
 
-                    <!-- Tab 2: LISTA E CONSOLE DE LOGS (Separada e focada) -->
-                    <div id="tab-content-logs" class="tab-content w-full h-full fade-in flex-col md:flex-row">
+                    <!-- Tab 2: LISTA E CONSOLE DE LOGS -->
+                    <div id="tab-content-logs" class="tab-content w-full h-full fade-in flex-col md:flex-row bg-vs-bg">
                         
-                        <!-- Coluna 1 da Tab 2 (Cards Verticais) -->
-                        <div class="w-full md:w-80 border-r border-vs-border bg-[#191919] flex flex-col shrink-0 flex-none max-h-[40vh] md:max-h-full">
-                            <div class="p-3 border-b border-vs-border flex items-center">
+                        <!-- Coluna 1 da Tab 2 (Cards e Busca) -->
+                        <div class="w-full md:w-80 border-r border-vs-border bg-vs-panel/30 flex flex-col shrink-0 flex-none max-h-[40vh] md:max-h-full">
+                            <div class="p-4 border-b border-vs-border bg-[#191919]">
                                 <div class="relative w-full">
                                     <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-vs-muted"></i>
-                                    <input type="text" id="search-input" placeholder="Filtrar log files..." class="w-full bg-vs-bg border border-vs-border text-xs text-vs-text pl-8 pr-3 py-2 rounded outline-none focus:border-vs-blue focus:ring-1 focus:ring-vs-blue transition-all">
+                                    <input type="text" id="search-input" placeholder="Buscar em nomes..." class="w-full bg-vs-bg border border-vs-border text-xs text-vs-text pl-8 pr-3 py-2 rounded outline-none focus:border-vs-blue focus:ring-1 focus:ring-vs-blue transition-all">
                                 </div>
                             </div>
                             
-                            <!-- Aqui entram os CARDS de Logs -->
-                            <div class="flex-1 overflow-y-auto p-2 space-y-1.5" id="logs-container">
+                            <!-- Lista de Arquivos -->
+                            <div class="flex-1 overflow-y-auto p-2 space-y-2" id="logs-container">
                                 <!-- Cards JS Renders -->
                             </div>
                         </div>
@@ -192,34 +200,54 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                         <!-- Coluna 2 da Tab 2 (Visualizador) -->
                         <div class="flex-1 flex flex-col min-w-0 relative bg-vs-bg">
                             
-                            <!-- Null State Console -->
+                            <!-- Null State -->
                             <div id="console-empty" class="absolute inset-0 flex flex-col items-center justify-center text-vs-muted z-10">
                                 <i data-lucide="code-2" class="w-16 h-16 opacity-10 mb-3"></i>
-                                <p class="text-sm">Abra um arquivo na lista lateral.</p>
+                                <p class="text-sm">Selecione um arquivo de log na lista lateral.</p>
                             </div>
 
                             <!-- Active State Console -->
-                            <div id="console-active" class="hidden flex-col h-full z-20 slide-in-right bg-vs-bg">
+                            <div id="console-active" class="hidden flex-col h-full z-20 bg-vs-bg">
                                 
-                                <!-- File ActionBar -->
-                                <div class="h-10 border-b border-vs-border flex items-center justify-between px-4 shrink-0 bg-[#1e1e1e]">
-                                    <div class="flex items-center gap-2 max-w-[60%]">
-                                        <i data-lucide="file-json" class="w-4 h-4 text-[#ce9178] shrink-0"></i>
-                                        <span id="console-title" class="text-xs font-mono text-vs-text truncate">log.txt</span>
+                                <!-- Tool/Action Bar Superior do Console -->
+                                <div class="h-12 border-b border-vs-border flex items-center justify-between px-4 shrink-0 bg-vs-panel shadow-sm relative pt-1">
+                                    
+                                    <!-- Abinha File Name -->
+                                    <div class="bg-vs-bg border border-vs-border border-b-0 rounded-t-lg px-3 py-1.5 flex items-center gap-2 group min-w-0 max-w-xs self-end h-[34px] relative -bottom-[1px]">
+                                        <div class="w-2 h-2 rounded-full bg-vs-blue/50"></div>
+                                        <span id="console-title" class="text-xs font-mono text-vs-text truncate">arquivo.log</span>
+                                        <button class="opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded ml-1 transition-opacity" onclick="window.closeConsole()">
+                                            <i data-lucide="x" class="w-3 h-3 text-vs-muted"></i>
+                                        </button>
                                     </div>
                                     
-                                    <div class="flex items-center gap-2">
-                                        <button onclick="window.closeConsole()" class="p-1 px-2 text-[11px] text-[#f44747] hover:bg-[#f44747]/10 rounded flex items-center gap-1 transition-colors border border-transparent hover:border-[#f44747]/30">
-                                            <i data-lucide="x" class="w-3 h-3"></i> Ocultar
+                                    <!-- Filtros e Actions -->
+                                    <div class="flex items-center gap-3">
+                                        <!-- Controle de Filtros In-Console (Visão) -->
+                                        <div class="flex items-center bg-[#1e1e1e] border border-vs-border rounded text-[11px] font-medium overflow-hidden font-sans">
+                                            <button onclick="window.setConsoleFilter('all')" id="filter-all" class="px-3 py-1.5 hover:bg-white/5 text-white bg-[#37373d]">Tudo</button>
+                                            <div class="w-px h-4 bg-vs-border"></div>
+                                            <button onclick="window.setConsoleFilter('error')" id="filter-error" class="px-3 py-1.5 hover:bg-white/5 text-vs-muted transition-colors flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-[#f44747]"></div> Erros</button>
+                                            <div class="w-px h-4 bg-vs-border"></div>
+                                            <button onclick="window.setConsoleFilter('warn')" id="filter-warn" class="px-3 py-1.5 hover:bg-white/5 text-vs-muted transition-colors flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-[#d7ba7d]"></div> Avisos</button>
+                                        </div>
+
+                                        <!-- Copy/Scroll -->
+                                        <div class="h-4 w-px bg-vs-border"></div>
+
+                                        <button onclick="window.scrollToBottom()" class="text-vs-muted hover:text-vs-text text-[11px] flex gap-1 items-center px-1" title="Ir para as últimas linhas">
+                                            <i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5"></i> Fim
+                                        </button>
+                                        <button onclick="window.copyConsoleOutput()" id="btn-copy" class="text-vs-muted hover:text-vs-text text-[11px] flex gap-1 items-center px-1">
+                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
                                         </button>
                                     </div>
                                 </div>
                                 
-                                <!-- The Code Block Window -->
+                                <!-- The Code Window Body -->
                                 <div class="flex-1 overflow-auto bg-vs-bg py-2 font-mono text-[13px] leading-relaxed selection:bg-[#264f78]" id="console-body">
-                                    <!-- Parsing entra aqui -->
+                                    <!-- Render via API -->
                                 </div>
-                                
                             </div>
                             
                         </div>
@@ -228,7 +256,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
                 </div>
             </div>
-            
         </main>
     </div>
 
