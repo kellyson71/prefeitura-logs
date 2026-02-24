@@ -75,53 +75,78 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             <!-- GLOBAL DASHBOARD (Nova Tela Inicial) -->
             <div id="view-global-dashboard" class="hidden absolute inset-0 flex-col overflow-y-auto z-20 p-6 md:p-10 fade-in w-full h-full">
                 
-                <div class="max-w-7xl mx-auto w-full">
+                <div class="max-w-[1400px] mx-auto w-full flex flex-col xl:flex-row gap-8">
                     
-                    <div class="flex items-end justify-between border-b border-[var(--panel-border)] pb-4 mb-8">
-                        <div>
-                            <h2 class="text-3xl font-tech text-[var(--neon-cyan)] tracking-widest uppercase glitch-text mb-1">GLOBAL OVERVIEW</h2>
-                            <p class="text-xs font-tech text-[var(--text-dim)] uppercase tracking-widest">Monitoramento simultâneo de todos os Nodes do Servidor</p>
+                    <!-- Coluna Esquerda: Overview e Projetos -->
+                    <div class="flex-1 shrink-0 flex flex-col">
+                        
+                        <div class="flex items-end justify-between border-b border-[var(--panel-border)] pb-4 mb-8">
+                            <div>
+                                <h2 class="text-3xl font-tech text-[var(--neon-cyan)] tracking-widest uppercase glitch-text mb-1">GLOBAL OVERVIEW</h2>
+                                <p class="text-xs font-tech text-[var(--text-dim)] uppercase tracking-widest">Monitoramento simultâneo de todos os Nodes do Servidor</p>
+                            </div>
+                            <div class="text-right flex items-center gap-6 hidden sm:flex">
+                                <div class="flex flex-col items-end">
+                                    <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-1">Total Files</span>
+                                    <span class="text-2xl font-tech text-white leading-none" id="m-stat-files">0</span>
+                                </div>
+                                <div class="flex flex-col items-end">
+                                    <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-1">Volumetria</span>
+                                    <span class="text-2xl font-tech text-white leading-none" id="m-stat-size">0 B</span>
+                                </div>
+                                <div class="flex flex-col items-end border-l border-[var(--neon-red)]/50 pl-6">
+                                    <span class="text-[10px] text-[var(--neon-red)] font-tech uppercase mb-1">Global Exceptions</span>
+                                    <span class="text-3xl font-tech text-[var(--neon-red)] leading-none text-shadow-red" id="m-stat-errs">0</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-right flex items-center gap-6">
-                            <div class="flex flex-col items-end">
-                                <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-1">Total Files</span>
-                                <span class="text-2xl font-tech text-white leading-none" id="m-stat-files">0</span>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-1">Volumetria</span>
-                                <span class="text-2xl font-tech text-white leading-none" id="m-stat-size">0 B</span>
-                            </div>
-                            <div class="flex flex-col items-end border-l border-[var(--neon-red)]/50 pl-6">
-                                <span class="text-[10px] text-[var(--neon-red)] font-tech uppercase mb-1">Global Exceptions</span>
-                                <span class="text-3xl font-tech text-[var(--neon-red)] leading-none text-shadow-red" id="m-stat-errs">0</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest mb-4">SYSTEM GRID LAYER</h3>
+                        <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest mb-4">SYSTEM GRID LAYER</h3>
+                        
+                        <!-- Aqui os cards globais entram dinamicamente -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10" id="global-grid-projects">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest mb-4">LATEST SYSTEM ACTIVITY</h3>
+                        <!-- Lista unificada de ultimos logs -->
+                        <div id="global-recent-logs" class="flex flex-col gap-2 mb-10 border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3 h-64 overflow-y-auto">
+                            <!-- JS appends recent logs (top 15) -->
+                        </div>
+
+                        <!-- Toolkit / Ferramentas Inferiores -->
+                        <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest mb-4">UTILITY COMMANDS</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div onclick="alert('Funcionalidade em desenvolvimento')" class="hud-panel p-5 border border-[var(--panel-border)] hover:border-[var(--neon-orange)] transition-colors cursor-pointer group bg-orange-950/20">
+                                <i data-lucide="trash-2" class="w-6 h-6 text-[var(--neon-orange)] mb-3 group-hover:scale-110 transition-transform"></i>
+                                <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Purge Old Logs</h4>
+                                <p class="text-[11px] font-tech text-[var(--text-dim)]">Limpar arquivos com mais de 30 dias para liberar disco.</p>
+                            </div>
+                            <div onclick="window.initApp?.()" class="hud-panel p-5 border border-[var(--panel-border)] hover:border-[var(--neon-green)] transition-all cursor-pointer group bg-[var(--neon-green)]/10">
+                                <i data-lucide="refresh-cw" class="w-6 h-6 text-[var(--neon-green)] mb-3 group-hover:animate-spin"></i>
+                                <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Force Re-Sync</h4>
+                                <p class="text-[11px] font-tech text-[var(--text-dim)]">Varrer os diretórios do Linux forçando re-leitura bruta agora.</p>
+                            </div>
+                            <div onclick="alert('Sistema OK. Todos os módulos online e respondendo.')" class="hud-panel p-5 border border-[var(--panel-border)] hover:border-[var(--neon-cyan)] transition-colors cursor-pointer group bg-[#061118]">
+                                <i data-lucide="cpu" class="w-6 h-6 text-[var(--neon-cyan)] mb-3 group-hover:scale-110 transition-transform"></i>
+                                <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Engine Health</h4>
+                                <p class="text-[11px] font-tech text-[var(--text-dim)]">Diagnóstico rápido dos serviços core base (PHP, Apache).</p>
+                            </div>
+                        </div>
+
+                    </div>
                     
-                    <!-- Aqui os cards globais entram dinamicamente -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-10" id="global-grid-projects">
-                        <!-- Populated by JS -->
-                    </div>
-
-                    <!-- Toolkit / Ferramentas Inferiores -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="hud-panel p-5 box-border hover:border-[var(--neon-cyan)] transition-colors cursor-pointer group">
-                            <i data-lucide="shield-alert" class="w-6 h-6 text-[var(--neon-orange)] mb-3 group-hover:scale-110 transition-transform"></i>
-                            <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Automated Rules</h4>
-                            <p class="text-xs font-tech text-[var(--text-dim)]">Configuração inativa de deleção automatica de logs antigos.</p>
-                        </div>
-                        <div class="hud-panel p-5 box-border hover:border-[var(--neon-cyan)] transition-colors cursor-pointer group">
-                            <i data-lucide="cpu" class="w-6 h-6 text-[var(--neon-cyan)] mb-3 group-hover:scale-110 transition-transform"></i>
-                            <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Engine Diagnostics</h4>
-                            <p class="text-xs font-tech text-[var(--text-dim)]">Visualizar saúde dos serviços (MySQL, Nginx, PHP-FPM) base.</p>
-                        </div>
-                        <div onclick="window.loadGlobalDashboardData?.()" class="hud-panel p-5 box-border border border-[var(--panel-border)] hover:border-[var(--neon-green)] transition-all cursor-pointer group bg-[var(--neon-green)]/5">
-                            <i data-lucide="refresh-cw" class="w-6 h-6 text-[var(--neon-green)] mb-3 group-hover:animate-spin"></i>
-                            <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Force Re-Sync</h4>
-                            <p class="text-xs font-tech text-[var(--text-dim)]">Varrer os diretórios do Linux forçando re-leitura bruta agora.</p>
-                        </div>
+                    <!-- Coluna Direita: Live Console -->
+                    <div class="w-full xl:w-[450px] shrink-0 hud-panel flex flex-col border border-[var(--panel-border)] shadow-[0_0_15px_rgba(0,240,255,0.05)] h-auto min-h-[600px] xl:max-h-[85vh] xl:sticky xl:top-0">
+                         <div class="h-10 border-b border-[var(--panel-border)] flex items-center justify-between px-4 bg-[#0a0f12] shrink-0">
+                              <span class="text-[11px] font-tech text-[var(--neon-green)] tracking-widest uppercase flex items-center gap-2">
+                                   <i data-lucide="radio" class="w-3 h-3 animate-pulse"></i> LIVE STREAM INTERCEPT
+                              </span>
+                              <span class="text-[10px] text-[var(--text-dim)] font-tech border border-[var(--panel-border)] px-1 relative">READ-ONLY</span>
+                         </div>
+                         <div id="global-live-terminal" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1.5 bg-[#050505] text-[11px] font-mono leading-relaxed pb-4 custom-scrollbar">
+                              <div class="text-[var(--text-dim)] animate-pulse font-tech text-xs tracking-widest">Waiting for signals...</div>
+                         </div>
                     </div>
 
                 </div>

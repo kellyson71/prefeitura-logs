@@ -161,9 +161,14 @@ function switchTab(tabId) {
 // NOVA FUNCIONALIDADE: DASHBOARD GLOBAL
 // Extrai os stats do servidor massivo
 // ==========================================
+let liveTerminalTimeout = null;
+
 async function loadGlobalDashboardData() {
     DOM.spinner.style.display = "flex";
     const globalGrid = document.getElementById("global-grid-projects");
+    const recentLogsContainer = document.getElementById("global-recent-logs");
+    const liveTerminal = document.getElementById("global-live-terminal");
+
     globalGrid.innerHTML = `
         <div class="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 hud-panel h-48 flex items-center justify-center font-tech text-[var(--neon-cyan)] opacity-50 pulse-glow">
             ANALISANDO TODOS OS NODES... aguarde
@@ -175,15 +180,11 @@ async function loadGlobalDashboardData() {
         const data = await response.json();
 
         if (data.data) {
-            // Conta incidentes massivos
             let globalErrors = 0;
             let globCount = data.data.length;
             let globSize = data.data.reduce((a, b) => a + b.size_bytes, 0);
 
-            // Agrupar logs por seus prováveis projetos originais usando nomes
             const projectMap = {};
-
-            // Inicia zerado os blocos para só exibir targets validos reais do array base state
             state.projects.forEach(p => {
                 if (p.id !== "all") projectMap[p.id] = { logs: [], err: 0, w: 0, latest: null };
             });
@@ -203,24 +204,19 @@ async function loadGlobalDashboardData() {
                 if (lowerPrev.includes("warning") || lowerPrev.includes("notice")) w++;
                 globalErrors += e;
 
-                // Tenta achar de quem e o log pra separar em caixinhas na Global
                 let targetId = "unknown";
                 for (let i = 1; i < state.projects.length; i++) {
                     const p = state.projects[i];
-                    // O filtro cru da search (ex protocolosead_com na api)
-                    const searchStr = p.id;
-                    if (log.file.includes(searchStr)) {
+                    if (log.file.includes(p.id)) {
                         targetId = p.id;
                         break;
                     }
                 }
 
-                // Se o arquivo contem o nome de um dos projetos mapeamos p ele
                 if (targetId !== "unknown" && projectMap[targetId]) {
                     projectMap[targetId].logs.push(log);
                     projectMap[targetId].err += e;
                     projectMap[targetId].w += w;
-                    // Salvar o modificado mais recente
                     if (
                         !projectMap[targetId].latest ||
                         new Date(log.modified) > new Date(projectMap[targetId].latest)
@@ -230,12 +226,10 @@ async function loadGlobalDashboardData() {
                 }
             });
 
-            // Atualiza Top Stats Globais
             document.getElementById("m-stat-files").textContent = globCount;
             document.getElementById("m-stat-size").textContent = formatBytes(globSize);
             document.getElementById("m-stat-errs").textContent = globalErrors;
 
-            // Renderiza Grid Pessoal por projeto
             let gridHtml = "";
             for (let i = 1; i < state.projects.length; i++) {
                 const p = state.projects[i];
@@ -280,9 +274,81 @@ async function loadGlobalDashboardData() {
                     </div>
                 `;
             }
-
             globalGrid.innerHTML = gridHtml;
+
+            // Popula LATEST SYSTEM ACTIVITY
+            const allLogsSorted = [...data.data].sort((a, b) => new Date(b.modified) - new Date(a.modified));
+            const top15 = allLogsSorted.slice(0, 15);
+
+            recentLogsContainer.innerHTML = top15
+                .map(log => {
+                    const isCrit =
+                        log.preview.toLowerCase().includes("fatal error") || log.preview.toLowerCase().includes("fail");
+                    const crClass = isCrit ? "text-[var(--neon-red)] font-bold" : "text-[var(--neon-cyan)]";
+                    return `
+                <div onclick="selectProjectByFile('${log.file}')" class="flex items-center justify-between p-2 hover:bg-[rgba(255,255,255,0.05)] cursor-pointer border-b border-[var(--panel-border)] border-dashed last:border-0 fade-in">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="activity" class="w-3.5 h-3.5 ${crClass} opacity-80"></i>
+                        <span class="text-xs font-mono text-[#c9e0e5] font-semibold truncate max-w-[200px] md:max-w-xs">${log.file}</span>
+                    </div>
+                    <span class="text-[10px] font-tech text-[var(--text-dim)]">${formatDate(log.modified)}</span>
+                </div>
+                `;
+                })
+                .join("");
             lucide.createIcons();
+
+            // =========================
+            // SIMULADOR LIVE STREAMING
+            // =========================
+            if (liveTerminalTimeout) clearTimeout(liveTerminalTimeout);
+            liveTerminal.innerHTML = "";
+
+            // Pega amostras de linhas de vários arquivos para simular feed
+            let streamLines = [];
+            top15.forEach(log => {
+                if (log.preview) {
+                    const lines = log.preview
+                        .split("\n")
+                        .filter(l => l.trim().length > 10)
+                        .slice(-5);
+                    lines.forEach(l => {
+                        const parsed = buildVscodeLine(`[${log.file}] ` + l, ">");
+                        if (parsed) streamLines.push(parsed);
+                    });
+                }
+            });
+            // Embaralha levemente as linhas para parecer um stream mixed
+            streamLines = streamLines.sort(() => 0.5 - Math.random());
+
+            let idx = 0;
+            const printNextLine = () => {
+                if (idx >= streamLines.length) {
+                    idx = 0; // recomeça pra não apagar terminal
+                }
+
+                const lineDiv = document.createElement("div");
+                lineDiv.className = "fade-in";
+                lineDiv.innerHTML = streamLines[idx];
+                liveTerminal.appendChild(lineDiv);
+
+                // Mantém autoscroll
+                liveTerminal.scrollTop = liveTerminal.scrollHeight;
+
+                // Keep max 50 lines to prevent memory leak
+                if (liveTerminal.children.length > 50) {
+                    liveTerminal.removeChild(liveTerminal.firstChild);
+                }
+
+                idx++;
+                // Velocidade aleatória para simular tráfego
+                liveTerminalTimeout = setTimeout(printNextLine, Math.random() * 800 + 200);
+            };
+
+            if (streamLines.length > 0) printNextLine();
+            else
+                liveTerminal.innerHTML =
+                    '<div class="text-[var(--neon-cyan)] font-tech text-xs">NO INCOMING SIGNALS...</div>';
         } else {
             globalGrid.innerHTML = `<div>Erro na extração global: ${data.error}</div>`;
         }
@@ -293,6 +359,18 @@ async function loadGlobalDashboardData() {
         DOM.spinner.style.display = "none";
     }
 }
+
+// Helper auxiliar p clicar no activity log e ir pro projeto mestre dele
+window.selectProjectByFile = function (filename) {
+    for (let i = 1; i < state.projects.length; i++) {
+        if (filename.includes(state.projects[i].id)) {
+            selectProject(state.projects[i].id);
+            return;
+        }
+    }
+    // se nao achar exact match
+    alert("File target project unresolved.");
+};
 
 // ==========================================
 // API FETCH INDIVIDUAL (TABS DO PROJETO)
@@ -532,7 +610,7 @@ function openConsole(logStrEnc) {
         let hasErrors = false;
 
         if (log.preview) {
-            const lines = log.preview.split("\\n");
+            const lines = log.preview.split("\n");
             let idx = 1;
             for (let ln of lines) {
                 const parsedLine = buildVscodeLine(ln, idx);
