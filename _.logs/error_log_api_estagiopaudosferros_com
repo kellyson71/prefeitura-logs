@@ -1,1 +1,0 @@
-[03-Oct-2025 13:18:21 UTC] PHP Deprecated:  str_replace(): Passing null to parameter #3 ($subject) of type array|string is deprecated in /home/u492577848/domains/api.estagiopaudosferros.com/public_html/index.php on line 18
