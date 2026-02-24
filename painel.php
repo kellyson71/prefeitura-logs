@@ -10,200 +10,310 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Logs</title>
+    <title>SYS.LOG.TERMINAL // SECURE_ACCESS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        :root {
+            --term-bg: #030806;
+            --term-green: #00ff41;
+            --term-cyan: #00f0ff;
+            --term-red: #ff003c;
+            --term-yellow: #fcee0a;
+            --term-purple: #b100ff;
+            --term-dim: rgba(0, 255, 65, 0.3);
+            --term-glow: rgba(0, 255, 65, 0.15);
+        }
         
-        .log-scroll::-webkit-scrollbar { width: 8px; }
-        .log-scroll::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
-        .log-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        .log-scroll::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        body { 
+            font-family: 'JetBrains Mono', monospace; 
+            background-color: var(--term-bg);
+            color: var(--term-green);
+            overflow: hidden;
+            /* Subtile scanline effect */
+            background-image: linear-gradient(rgba(0, 255, 65, 0.02) 50%, transparent 50%);
+            background-size: 100% 4px;
+            pointer-events: auto;
+        }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
+        /* Screen distortion/vignette effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 100;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        .edex-border {
+            border: 1px solid var(--term-dim);
+            box-shadow: inset 0 0 15px var(--term-glow);
+            background: rgba(0, 15, 5, 0.6);
+            backdrop-filter: blur(4px);
+            position: relative;
         }
+        
+        /* Corner accents for borders */
+        .edex-border::after {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border: 1px solid transparent;
+            /* Create corner markers using background linear gradients */
+            background: 
+                linear-gradient(var(--term-cyan), var(--term-cyan)) top left,
+                linear-gradient(var(--term-cyan), var(--term-cyan)) top left,
+                linear-gradient(var(--term-cyan), var(--term-cyan)) bottom right,
+                linear-gradient(var(--term-cyan), var(--term-cyan)) bottom right;
+            background-size: 8px 1px, 1px 8px;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .edex-header {
+            border-bottom: 2px solid var(--term-dim);
+            background: rgba(0, 240, 255, 0.05);
+            color: var(--term-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 2px 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .scroll-hacker::-webkit-scrollbar { width: 8px; height: 8px; }
+        .scroll-hacker::-webkit-scrollbar-track { background: rgba(0, 20, 0, 0.5); border-left: 1px solid var(--term-dim); }
+        .scroll-hacker::-webkit-scrollbar-thumb { background: var(--term-dim); border: 1px solid var(--term-cyan); }
+        .scroll-hacker::-webkit-scrollbar-thumb:hover { background: var(--term-cyan); }
+        .scroll-hacker::-webkit-scrollbar-corner { background: transparent; }
+
+        .animate-blink { animation: blink 1.2s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .line-glow { text-shadow: 0 0 5px currentColor; }
+
+        .btn-hacker {
+            border: 1px solid var(--term-dim);
+            color: var(--term-green);
+            background: rgba(0, 255, 65, 0.05);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-hacker:hover {
+            background: rgba(0, 255, 65, 0.2);
+            border-color: var(--term-green);
+            color: #fff;
+            text-shadow: 0 0 5px var(--term-green);
+            box-shadow: 0 0 10px var(--term-glow);
+        }
+        .btn-hacker:active {
+            transform: scale(0.98);
+        }
+
+        /* Glitch effect on hover for warnings */
+        .glitch-hover:hover {
+            animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: var(--term-red);
+        }
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Error/Warning Blocks */
+        .fatal-block { border-left-color: var(--term-red) !important; color: #ff6b81; background: rgba(255, 0, 60, 0.1) !important; }
+        .warn-block { border-left-color: var(--term-yellow) !important; color: #ffd32a; background: rgba(252, 238, 10, 0.05) !important; }
+        .mail-block { border-left-color: var(--term-purple) !important; color: #d980fa; background: rgba(177, 0, 255, 0.05) !important; }
+        .mail-fail-block { border-left-color: #ff3f34 !important; color: #ff3f34; font-weight: bold; background: rgba(255, 63, 52, 0.2) !important; }
+        .info-block { border-left-color: var(--term-cyan) !important; color: #4bcffa; background: rgba(0, 240, 255, 0.03) !important; }
+
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
-
-    <!-- Mobile Sidebar Overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900/50 z-40 hidden lg:hidden transition-opacity" onclick="toggleSidebar()"></div>
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="bg-white w-72 flex-shrink-0 border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-50">
-        <div class="h-16 flex items-center px-6 border-b border-gray-200">
-            <div class="bg-blue-600 p-2 rounded-lg mr-3 shadow-sm">
-                <i data-lucide="terminal" class="w-5 h-5 text-white"></i>
+<body class="flex h-screen flex-col p-2 sm:p-4 gap-3 text-xs sm:text-sm">
+    
+    <!-- Top Nav/Header -->
+    <header class="edex-border flex flex-col sm:flex-row items-center justify-between px-4 py-3 shrink-0 gap-3 z-10">
+        <div class="flex items-center gap-4 w-full sm:w-auto justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="cpu" class="w-6 h-6 text-cyan-400"></i>
+                <span class="text-cyan-400 font-bold tracking-widest text-lg sm:text-xl line-glow">
+                    SYS.LOG.TERMINAL<span class="animate-blink">_</span>
+                </span>
             </div>
-            <span class="text-lg font-bold text-gray-900 mx-auto">Painel de Logs</span>
-            <button class="lg:hidden ml-auto p-2 text-gray-500 hover:bg-gray-100 rounded-md" onclick="toggleSidebar()">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+            <span class="hidden md:inline px-3 py-1 bg-green-900/40 text-green-400 border border-green-500/50 rounded-sm font-bold text-[10px] tracking-wider">
+                SECURE_CONNECTION: ESTABLISHED // PORT 22
+            </span>
         </div>
 
-        <div class="px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Projetos
-        </div>
-
-        <nav class="flex-1 overflow-y-auto px-3 space-y-1 pb-4" id="project-list">
-            <!-- Renderizado via JS -->
-        </nav>
-
-        <div class="p-4 border-t border-gray-200 bg-gray-50/50">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold shadow-sm">
-                    <?= strtoupper(substr($_SESSION['username'], 0, 1)) ?>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 truncate"><?= htmlspecialchars($_SESSION['username']) ?></p>
-                    <p class="text-xs text-gray-500 truncate">Administrador</p>
-                </div>
-                <a href="logout.php" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Sair">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0">
-            <div class="flex items-center gap-4">
-                <button class="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-md -ml-2 transition-colors" onclick="toggleSidebar()">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
-                <div class="flex items-center gap-2.5">
-                    <div class="p-1.5 bg-gray-100 rounded-md">
-                        <i data-lucide="folder-open" class="w-4 h-4 text-gray-500"></i>
-                    </div>
-                    <h2 class="text-lg font-semibold text-gray-800" id="current-project-title">Selecione um projeto</h2>
-                </div>
+        <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div id="loading-indicator" class="text-yellow-400 font-bold items-center gap-2 hidden">
+                <span class="animate-pulse">[FETCHING_DATA...]</span>
             </div>
             
             <div class="flex items-center gap-3">
-                <button onclick="loadLogs()" class="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 active:scale-95">
-                    <i data-lucide="refresh-cw" class="w-4 h-4" id="icon-refresh"></i>
-                    <span class="hidden sm:inline">Atualizar logs</span>
-                </button>
+                <span class="text-cyan-400 border border-cyan-500/50 px-3 py-1 bg-cyan-900/20 shadow-[0_0_8px_rgba(0,240,255,0.2)]">
+                    USR: <?= strtoupper($_SESSION['username']) ?>_ADM
+                </span>
+                <a href="logout.php" class="btn-hacker !border-red-500/50 !text-red-500 hover:!bg-red-500/20 px-3 py-1 flex items-center gap-1">
+                    <i data-lucide="power" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">[LOGOUT]</span>
+                </a>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main class="flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6 lg:p-8">
-            <div class="max-w-7xl mx-auto space-y-6">
-                <!-- Filters -->
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div class="relative w-full sm:max-w-md">
-                        <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                        <input type="text" id="search-input" placeholder="Buscar no nome do log..." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400">
-                    </div>
-                    
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <div class="relative w-full sm:w-auto">
-                            <i data-lucide="arrow-down-up" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                            <select id="sort-select" class="w-full sm:w-auto bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:bg-white pl-9 pr-8 py-2 appearance-none outline-none transition-all cursor-pointer">
-                                <option value="desc">Mais recentes</option>
-                                <option value="asc">Mais antigos</option>
-                            </select>
-                        </div>
-                        <div class="relative w-full sm:w-auto">
-                            <i data-lucide="list-filter" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                            <select id="limit-select" class="w-full sm:w-auto bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:bg-white pl-9 pr-8 py-2 appearance-none outline-none transition-all cursor-pointer">
-                                <option value="all">Todos</option>
-                                <option value="5">Últimos 5</option>
-                                <option value="10">Últimos 10</option>
-                            </select>
-                        </div>
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col lg:flex-row gap-3 overflow-hidden z-10">
+        
+        <!-- Sidebar: Project Structure -->
+        <aside class="edex-border w-full lg:w-72 flex flex-col shrink-0 h-48 lg:h-auto">
+            <div class="edex-header p-3 font-bold flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="hard-drive" class="w-4 h-4 text-cyan-400"></i> SYSTEM_NODES
+                </div>
+                <div class="text-[10px] text-cyan-400/50">MNT/DEV/LOGS</div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto scroll-hacker p-2 space-y-[2px]" id="project-list">
+                <!-- Rendered dynamically -->
+            </div>
+            
+            <!-- Realtime Metrics Mock -->
+            <div class="border-t border-green-500/30 bg-black/40 p-3 text-[10px] sm:text-xs">
+                <div class="text-cyan-400 mb-2 border-b border-cyan-500/30 pb-1 w-full flex justify-between">
+                    <span>HARDWARE_METRICS</span>
+                    <i data-lucide="activity" class="w-3 h-3 animate-pulse"></i>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div class="flex justify-between"><span>CPU_USAGE:</span> <span class="text-green-400 text-right">04.2%</span></div>
+                    <div class="flex justify-between"><span>MEM_ALLOC:</span> <span class="text-yellow-400 text-right">68.1%</span></div>
+                    <div class="flex justify-between"><span>I/O_DISK:</span> <span class="text-green-400 text-right">OK</span></div>
+                    <div class="flex justify-between"><span>NET_PKG:</span> <span id="net-status" class="text-cyan-400 animate-pulse text-right">TX/RX</span></div>
+                    <div class="flex justify-between col-span-2 pt-1 mt-1 border-t border-green-500/20">
+                        <span>SYS_UPTIME:</span> <span class="text-green-400"><span id="uptime">0d 0h 0m</span></span>
                     </div>
                 </div>
+            </div>
+        </aside>
 
-                <!-- Logs Grid -->
-                <div id="logs-container" class="grid grid-cols-1 md:grid-cols-2 xlg:grid-cols-3 gap-6">
-                    <div class="col-span-full py-16 flex flex-col items-center justify-center text-gray-400">
-                        <div class="bg-gray-100 p-4 rounded-full mb-4">
-                            <i data-lucide="layout-dashboard" class="w-8 h-8 text-gray-400"></i>
-                        </div>
-                        <p class="text-lg font-medium text-gray-600 mb-1">Selecione um projeto</p>
-                        <p class="text-sm">Escolha um projeto na barra lateral para visualizar seus logs reais.</p>
+        <!-- Center: Datagrid / Log Files -->
+        <main class="edex-border flex-1 flex flex-col min-w-0">
+            <!-- Header/Controls -->
+            <div class="edex-header p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-black/60">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <i data-lucide="terminal-square" class="w-5 h-5 text-cyan-400"></i>
+                    <span id="current-project-title" class="font-bold tracking-wide break-all">TARGET: NONE</span>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-auto group">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-green-500/50 group-focus-within:text-cyan-400"></i>
+                        <input type="text" id="search-input" placeholder="> GREP_FILTER_FILE" class="bg-black border border-green-500/50 text-green-400 pl-8 pr-2 py-1.5 outline-none focus:border-cyan-400 focus:shadow-[0_0_8px_rgba(0,240,255,0.4)] placeholder-green-700 w-full sm:w-48 lg:w-64 transition-all">
                     </div>
+                    
+                    <button onclick="loadLogs()" class="btn-hacker px-3 py-1.5 flex-1 sm:flex-none flex justify-center items-center gap-2">
+                        <i data-lucide="refresh-cw" id="icon-refresh" class="w-4 h-4"></i>
+                        <span>[EXEC_SYNC]</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Previews Grid -->
+            <div class="flex-1 overflow-y-auto scroll-hacker p-4 grid grid-cols-1 2xl:grid-cols-2 gap-4 content-start" id="logs-container">
+                <div class="col-span-full h-full min-h-[50vh] flex flex-col items-center justify-center text-green-500/30 space-y-4">
+                    <i data-lucide="radar" class="w-16 h-16 animate-spin-slow opacity-50"></i>
+                    <p class="font-bold tracking-widest text-lg animate-pulse">> AWAITING_TARGET_SELECTION...</p>
                 </div>
             </div>
         </main>
-
-        <footer class="bg-white border-t border-gray-200 py-4 px-6 shrink-0 z-10 text-center sm:text-right">
-            <p class="text-sm text-gray-500 flex items-center justify-center sm:justify-end gap-1.5 font-medium">
-                Desenvolvido por Kellyson <span class="text-lg">💻</span>
-            </p>
-        </footer>
     </div>
 
-    <!-- Modal View Log -->
-    <div id="log-modal" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop" onclick="closeModal()"></div>
-        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-            <div class="bg-gray-900 text-gray-100 rounded-2xl w-full max-w-5xl shadow-2xl relative flex flex-col max-h-[90vh] md:max-h-[85vh] transform scale-95 opacity-0 transition-all duration-300 border border-gray-700" id="modal-content">
-                
-                <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800 shrink-0 bg-gray-900 rounded-t-2xl z-10">
-                    <div class="flex items-center gap-3 mx-2 overflow-hidden">
-                        <div class="bg-gray-800 p-2 rounded-lg shrink-0 border border-gray-700">
-                            <i data-lucide="file-code-2" class="w-5 h-5 text-blue-400"></i>
-                        </div>
-                        <h3 class="font-semibold text-lg truncate text-gray-100 tracking-wide" id="modal-title">log.txt</h3>
+    <!-- Details View Terminal (Overlay) -->
+    <div id="log-modal" class="fixed inset-0 z-50 p-0 sm:p-4 md:p-8 hidden bg-black/90 backdrop-blur-md transition-opacity opacity-0 duration-300">
+        <div class="edex-border w-full h-full flex flex-col bg-[#020503] shadow-[0_0_40px_rgba(0,240,255,0.15)] transform scale-95 opacity-0 transition-all duration-300" id="modal-content">
+            
+            <!-- Modal Header -->
+            <div class="flex-none edex-header p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-black/80">
+                <div class="flex flex-col min-w-0">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="file-code" class="w-5 h-5 text-cyan-400 shrink-0"></i>
+                        <span id="modal-title" class="font-bold text-base sm:text-xl text-white tracking-widest truncate">/var/log/file.log</span>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0 ml-4">
-                        <button class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border border-gray-700" onclick="copyLogContent()">
-                            <i data-lucide="copy" class="w-4 h-4"></i>
-                            <span class="hidden sm:inline">Copiar</span>
-                        </button>
-                        <button class="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors" onclick="closeModal()">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                    </div>
+                    <span id="modal-meta" class="text-xs text-cyan-500/70 mt-1 flex items-center gap-2">
+                        <i data-lucide="info" class="w-3 h-3"></i> <span>SIZE: 0B | TS: N/A</span>
+                    </span>
                 </div>
                 
-                <div class="p-5 overflow-y-auto log-scroll flex-1 font-mono text-sm leading-relaxed whitespace-pre-wrap break-all text-gray-300 selection:bg-blue-500/30 selection:text-white" id="modal-body">
-                    Carregando conteúdo...
+                <div class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                    <button class="btn-hacker px-4 py-2 flex-1 sm:flex-none flex justify-center items-center gap-2 !border-cyan-500/50 !text-cyan-400 hover:!bg-cyan-500/20" onclick="copyLogContent()" id="copy-btn">
+                        <i data-lucide="copy" class="w-4 h-4"></i> <span>[YANK]</span>
+                    </button>
+                    <button class="btn-hacker px-4 py-2 flex-1 sm:flex-none flex justify-center items-center gap-2 !border-red-500/50 !text-red-500 hover:!bg-red-500/20" onclick="closeModal()">
+                        <i data-lucide="x-square" class="w-4 h-4"></i> <span>[KILL_PROC]</span>
+                    </button>
                 </div>
-                
-                <div class="p-4 border-t border-gray-800 shrink-0 text-xs text-gray-400 flex justify-between items-center bg-gray-900 rounded-b-2xl">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="hard-drive" class="w-4 h-4 text-gray-500"></i>
-                        <span id="modal-size" class="font-medium">Tamanho: 0 KB</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="calendar" class="w-4 h-4 text-gray-500"></i>
-                        <span id="modal-date" class="font-medium">Modificado: -</span>
-                    </div>
+            </div>
+            
+            <!-- Analyzed Log Output -->
+            <div class="flex-1 overflow-x-auto overflow-y-auto scroll-hacker p-0 m-2 border border-green-500/20 bg-black/50" id="modal-body">
+                <!-- Data injected dynamically -->
+            </div>
+            
+            <!-- Terminal Status Bar -->
+            <div class="flex-none border-t border-cyan-500/30 p-2 text-[10px] sm:text-xs text-cyan-500 bg-cyan-900/10 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="animate-pulse">_</span>
+                    <span>PROCESS: LOG_ANALYZER V2.0 // EOF_REACHED</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="hidden sm:inline" id="err-count-display">ERRORS_DETECTED: 0</span>
+                    <span class="hidden sm:inline" id="warn-count-display">WARNINGS: 0</span>
+                    <span>ENCODING: UTF-8</span>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- JS Logic -->
     <script>
         lucide.createIcons();
+
+        // Uptime counter mockup
+        let uptimeS = Math.floor(Math.random()*10000);
+        setInterval(() => {
+            uptimeS++;
+            const d = Math.floor(uptimeS / 86400);
+            const h = Math.floor((uptimeS % 86400) / 3600);
+            const m = Math.floor((uptimeS % 3600) / 60);
+            document.getElementById('uptime').innerText = `${d}d ${h}h ${m}m`;
+        }, 60000); //update every min
+        document.getElementById('uptime').innerText = `${Math.floor(uptimeS / 86400)}d ${Math.floor((uptimeS % 86400) / 3600)}h ${Math.floor((uptimeS % 3600) / 60)}m`;
 
         const state = {
             currentProject: null,
             logs: [],
-            // Mapeados baseados nos prefixos reais dos arquivos lidos pela API
             projects: [
-                { id: 'all', name: 'Todos os Logs', icon: 'layers' },
-                { id: 'protocolosead_com', name: 'Protocolo SEAD', icon: 'file-text' },
-                { id: 'estagiopaudosferros_com', name: 'Estágio PDF', icon: 'graduation-cap' },
-                { id: 'sema_paudosferros', name: 'SEMA PDF', icon: 'leaf' },
-                { id: 'demutran_protocolosead_com', name: 'Demutran SEAD', icon: 'car' },
-                { id: 'demutranpaudosferros', name: 'Demutran PDF', icon: 'car' },
-                { id: 'suap2_estagiopaudosferros_com', name: 'SUAP 2', icon: 'library' },
-                { id: 'supaco_estagiopaudosferros_com', name: 'Supaco', icon: 'database' },
-                { id: 'api_estagiopaudosferros_com', name: 'API Estágio', icon: 'code' },
-                { id: 'api_protocolosead_com', name: 'API Protocolo', icon: 'code' },
+                { id: 'all', name: 'ROOT_/[ALL_SYS_LOGS]' },
+                { id: 'protocolosead_com', name: 'SYS_PROTOCOL_SEAD' },
+                { id: 'estagiopaudosferros_com', name: 'SYS_ESTAGIO_PDF' },
+                { id: 'sema_paudosferros', name: 'SYS_SEMA_PDF' },
+                { id: 'demutran_protocolosead_com', name: 'SYS_DEMUTRAN_SEAD' },
+                { id: 'demutranpaudosferros', name: 'SYS_DEMUTRAN_PDF' },
+                { id: 'suap2_estagiopaudosferros_com', name: 'DB_SUAP_2' },
+                { id: 'supaco_estagiopaudosferros_com', name: 'DB_SUPACO' },
+                { id: 'api_estagiopaudosferros_com', name: 'API_ESTAGIO' },
+                { id: 'api_protocolosead_com', name: 'API_PROTOCOLO' },
             ]
         };
 
@@ -212,33 +322,27 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             logsContainer: document.getElementById('logs-container'),
             currentProjectTitle: document.getElementById('current-project-title'),
             searchInput: document.getElementById('search-input'),
-            sortSelect: document.getElementById('sort-select'),
-            limitSelect: document.getElementById('limit-select'),
             iconRefresh: document.getElementById('icon-refresh'),
-            sidebar: document.getElementById('sidebar'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            loadingInd: document.getElementById('loading-indicator'),
             modal: document.getElementById('log-modal'),
-            modalBackdrop: document.getElementById('modal-backdrop'),
             modalContent: document.getElementById('modal-content'),
             modalTitle: document.getElementById('modal-title'),
             modalBody: document.getElementById('modal-body'),
-            modalSize: document.getElementById('modal-size'),
-            modalDate: document.getElementById('modal-date')
+            modalMeta: document.getElementById('modal-meta'),
+            errCount: document.getElementById('err-count-display'),
+            warnCount: document.getElementById('warn-count-display'),
         };
 
         const formatBytes = (bytes) => {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
         };
 
         const formatDate = (dateString) => {
             const date = new Date(dateString);
-            return new Intl.DateTimeFormat('pt-BR', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            }).format(date);
+            return date.toISOString().replace('T', ' ').substring(0, 19);
         };
 
         const escapeHtml = (unsafe) => unsafe
@@ -246,26 +350,28 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
         function renderProjects() {
-            DOM.projectList.innerHTML = state.projects.map(p => `
+            DOM.projectList.innerHTML = state.projects.map(p => {
+                const isActive = state.currentProject === p.id;
+                return `
                 <button onclick="selectProject('${p.id}')" 
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group relative
-                        ${state.currentProject === p.id 
-                            ? 'bg-blue-50 text-blue-700 font-medium' 
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}">
-                    <i data-lucide="${p.icon}" class="w-5 h-5 ${state.currentProject === p.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}"></i>
-                    <span class="truncate z-10">${p.name}</span>
-                    ${state.currentProject === p.id ? '<div class="absolute right-3 w-1.5 h-1.5 rounded-full bg-blue-600"></div>' : ''}
+                        class="w-full flex items-center justify-between px-3 py-2 text-left transition-all border-l-2 group
+                        ${isActive 
+                            ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300 font-bold shadow-[inset_4px_0_0_rgba(0,240,255,0.4)]' 
+                            : 'border-transparent text-green-600 hover:bg-green-900/20 hover:text-green-400 hover:border-green-500/50'}">
+                    <div class="flex items-center gap-2 truncate">
+                        <i data-lucide="${p.id==='all' ? 'layers' : (p.id.includes('db') ? 'database' : 'folder-git-2')}" class="w-4 h-4 shrink-0 opacity-70 group-hover:opacity-100"></i>
+                        <span class="truncate mt-0.5">./${p.name}</span>
+                    </div>
                 </button>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         }
 
         function selectProject(projectId) {
             state.currentProject = projectId;
             const proj = state.projects.find(p => p.id === projectId);
-            DOM.currentProjectTitle.textContent = proj ? proj.name : 'Projeto Selecionado';
+            DOM.currentProjectTitle.textContent = `TARGET: ${proj ? proj.name : 'UNKNOWN'} // [MOUNTED]`;
             renderProjects();
-            if(window.innerWidth < 1024) toggleSidebar(false);
             loadLogs();
         }
 
@@ -273,6 +379,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             if (!state.currentProject) return;
 
             DOM.iconRefresh.classList.add('animate-spin');
+            DOM.loadingInd.classList.remove('hidden');
+            DOM.loadingInd.classList.add('flex');
 
             try {
                 const response = await fetch(`api/logs.php?project=${encodeURIComponent(state.currentProject)}`);
@@ -284,25 +392,53 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                 } else if (data.error) {
                     showError(data.error);
                 } else {
-                    showError("Nenhum dado retornado da API.");
+                    showError("ERR_NULL_RESPONSE");
                 }
             } catch (error) {
                 console.error(error);
-                showError("Erro ao carregar os logs. Verifique sua conexão ou a permissão da pasta raiz dos logs.");
+                showError("ERR_CONNECTION_REFUSED_OR_DIR_NOT_FOUND");
             } finally {
                 DOM.iconRefresh.classList.remove('animate-spin');
+                DOM.loadingInd.classList.add('hidden');
+                DOM.loadingInd.classList.remove('flex');
             }
+        }
+
+        // Mini syntax highlighter for the preview cards
+        function getHighlightsFromPreview(content) {
+            let lower = content.toLowerCase();
+            let hintsHtml = '';
+            
+            // Critical
+            if (lower.includes('fatal error') || lower.includes('exception') || lower.includes("doesn't exist")) {
+                hintsHtml += '<span class="px-1.5 py-0.5 bg-red-900/50 text-red-500 border border-red-500/30 text-[10px] uppercase font-bold glitch-hover">[FATAL_ERR]</span> ';
+            }
+            // Warning/Notice/Syntax
+            if (lower.includes('warning') || lower.includes('syntax error') || lower.includes('undefined array key')) {
+                hintsHtml += '<span class="px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 border border-yellow-500/30 text-[10px] uppercase font-bold">[WARN/SYNTAX]</span> ';
+            }
+            // Mail/Upload Critical
+            if (lower.includes('mail') || lower.includes('smtp')) {
+                let badgeClass = lower.includes('fail') || lower.includes('error') ? 'bg-red-900/50 text-red-400 border-red-400/50 blink' : 'bg-purple-900/30 text-purple-400 border-purple-500/30';
+                hintsHtml += `<span class="px-1.5 py-0.5 ${badgeClass} border text-[10px] uppercase font-bold">[SMTP_TRACE]</span> `;
+            }
+            if (lower.includes('file not found')) {
+                hintsHtml += '<span class="px-1.5 py-0.5 bg-cyan-900/30 text-cyan-300 border border-cyan-500/30 text-[10px] uppercase font-bold">[MISSING_FILE]</span> ';
+            }
+
+            if(!hintsHtml) {
+                hintsHtml = '<span class="px-1.5 py-0.5 bg-green-900/20 text-green-500/50 border border-green-500/20 text-[10px] uppercase">[ROUTINE_LOG]</span>';
+            }
+
+            return hintsHtml;
         }
 
         function renderLogs() {
             if (!state.logs || state.logs.length === 0) {
                 DOM.logsContainer.innerHTML = `
-                    <div class="col-span-full py-16 flex flex-col items-center justify-center text-gray-500 fade-in">
-                        <div class="bg-gray-100 p-4 rounded-full mb-4">
-                            <i data-lucide="inbox" class="w-8 h-8 text-gray-400"></i>
-                        </div>
-                        <p class="text-lg font-medium text-gray-700 mb-1">Nenhum log encontrado</p>
-                        <p class="text-sm">Não há logs para este projeto no momento ou acesso negado no disco.</p>
+                    <div class="col-span-full h-full min-h-[40vh] flex flex-col items-center justify-center text-green-500/50">
+                        <i data-lucide="package-open" class="w-12 h-12 mb-4 opacity-50"></i>
+                        <p class="font-bold tracking-widest">[DIR_EMPTY] ZERO_LOGS_FOUND_FOR_TARGET</p>
                     </div>
                 `;
                 lucide.createIcons();
@@ -310,144 +446,206 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             }
 
             let filtered = [...state.logs];
-
             const term = DOM.searchInput.value.toLowerCase().trim();
             if (term) filtered = filtered.filter(l => l.file.toLowerCase().includes(term));
 
-            const sortAsc = DOM.sortSelect.value === 'asc';
-            filtered.sort((a, b) => {
-                const tA = new Date(a.modified).getTime();
-                const tB = new Date(b.modified).getTime();
-                return sortAsc ? tA - tB : tB - tA;
-            });
-
-            const limit = DOM.limitSelect.value;
-            if (limit !== 'all') filtered = filtered.slice(0, parseInt(limit, 10));
-
             if (filtered.length === 0) {
                 DOM.logsContainer.innerHTML = `
-                    <div class="col-span-full py-16 text-center text-gray-500 fade-in flex flex-col items-center">
-                        <i data-lucide="search-x" class="w-10 h-10 mb-3 text-gray-300"></i>
-                        <p class="font-medium text-gray-700">Nenhum log corresponde aos filtros.</p>
+                    <div class="col-span-full h-full min-h-[40vh] flex flex-col items-center justify-center text-yellow-500/50">
+                        <i data-lucide="filter-X" class="w-12 h-12 mb-4 opacity-50"></i>
+                        <p class="font-bold tracking-widest">[GREP_FAIL] NO_MATCH_FOUND</p>
                     </div>
                 `;
                 lucide.createIcons();
                 return;
             }
 
-            DOM.logsContainer.innerHTML = filtered.map((log, index) => `
-                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col fade-in group" style="animation-delay: ${index * 0.05}s">
-                    <div class="flex justify-between items-start mb-4 gap-3">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="bg-indigo-50 p-2 rounded-lg shrink-0 group-hover:bg-blue-50 transition-colors">
-                                <i data-lucide="file-json" class="w-5 h-5 text-indigo-500 group-hover:text-blue-600 transition-colors"></i>
-                            </div>
-                            <h3 class="font-semibold text-gray-900 truncate tracking-tight text-base" title="${log.file}">${log.file}</h3>
+            DOM.logsContainer.innerHTML = filtered.map((log) => {
+                const statusHints = getHighlightsFromPreview(log.preview);
+                // Extract last couple lines for preview
+                const lines = log.preview.split('\\n');
+                const lastLines = lines.slice(-3).join('\\n').trim();
+
+                return `
+                <div class="bg-black/60 border border-green-500/30 flex flex-col group relative overflow-hidden h-48 sm:h-56 transform transition-all hover:-translate-y-1 hover:border-cyan-500/60 hover:shadow-[0_4px_20px_rgba(0,240,255,0.1)]">
+                    
+                    <!-- decorative corner -->
+                    <div class="absolute top-0 right-0 w-8 h-8 opacity-20 pointer-events-none" style="background: linear-gradient(-45deg, var(--term-cyan) 50%, transparent 50%);"></div>
+
+                    <div class="p-3 border-b border-green-500/20 bg-green-900/10 flex justify-between items-start gap-2">
+                        <div class="font-bold text-cyan-300 truncate w-full flex items-center gap-2" title="${log.file}">
+                            <i data-lucide="file-json-2" class="w-4 h-4 shrink-0 opacity-70"></i> 
+                            <span class="truncate mt-0.5">${log.file}</span>
                         </div>
-                        <span class="bg-gray-50 text-gray-600 border border-gray-100 text-xs font-semibold px-2 py-1.5 rounded-md shrink-0 whitespace-nowrap">
-                            ${formatBytes(log.size_bytes)}
-                        </span>
                     </div>
                     
-                    <div class="bg-gray-50/80 rounded-xl p-3.5 text-xs text-gray-600 font-mono mb-5 flex-1 break-all line-clamp-3 overflow-hidden text-ellipsis border border-gray-100 border-l-2 border-l-gray-300 shadow-inner group-hover:border-l-blue-400 transition-colors leading-relaxed">
-                        ${escapeHtml(log.preview)}
+                    <!-- Insights badges -->
+                    <div class="px-3 py-1.5 border-b border-green-500/10 flex gap-1 flex-wrap items-center bg-black">
+                        ${statusHints}
+                    </div>
+
+                    <div class="flex-1 p-3 text-[10px] sm:text-xs font-mono break-all overflow-hidden text-green-500/60 group-hover:text-green-400 relative">
+                        <span class="opacity-50 select-none">... </span>
+                        ${escapeHtml(lastLines) || '[NO_READABLE_TEXT]'}
+                        <!-- Fade bottom -->
+                        <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black to-transparent pointer-events-none"></div>
                     </div>
                     
-                    <div class="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div class="text-xs font-medium text-gray-500 flex items-center gap-1.5" title="${formatDate(log.modified)}">
-                            <i data-lucide="clock" class="w-4 h-4 text-gray-400"></i>
-                            <span class="truncate" style="max-width: 100px;">${formatDate(log.modified)}</span>
+                    <div class="p-2 border-t border-green-500/20 bg-black flex items-center justify-between text-[10px] text-green-500/50 mt-auto">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> ${formatBytes(log.size_bytes)}</span>
+                            <span class="flex items-center gap-1 hidden sm:flex"><i data-lucide="clock" class="w-3 h-3"></i> ${formatDate(log.modified)}</span>
                         </div>
-                        <button onclick="openModal('${encodeURIComponent(JSON.stringify(log))}')" class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-all flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg active:scale-95">
-                            <span>Ver detalhes</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        <button onclick="openModal('${encodeURIComponent(JSON.stringify(log))}')" class="btn-hacker px-3 py-1 !text-cyan-400 !border-cyan-500/30">
+                            [VIEW_DUMP]
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             lucide.createIcons();
         }
 
         function showError(msg) {
             DOM.logsContainer.innerHTML = `
-                <div class="col-span-full py-16 flex flex-col items-center justify-center text-red-500 fade-in">
-                    <div class="bg-red-50 p-4 rounded-full mb-4">
-                        <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500"></i>
+                <div class="col-span-full h-full min-h-[40vh] flex flex-col items-center justify-center text-red-500">
+                    <div class="bg-red-900/20 p-4 border border-red-500/50 mb-4 animate-pulse">
+                        <i data-lucide="alert-triangle" class="w-12 h-12 text-red-500"></i>
                     </div>
-                    <p class="font-bold text-gray-800 text-lg mb-1">Ops, algo deu errado</p>
-                    <p class="text-gray-500 text-sm max-w-md text-center">${msg}</p>
+                    <p class="font-bold text-red-500 text-lg mb-1 tracking-widest">[SYSTEM_FAILURE]</p>
+                    <p class="text-red-400/70 text-sm max-w-md text-center font-mono">${msg}</p>
                 </div>
             `;
             lucide.createIcons();
+        }
+
+        // Advanced parser to highlight lines for the Detailed view
+        function parseLogContentFull(content) {
+            if (!content) return '> NO_DATA_STREAM';
+            
+            const lines = content.split('\\n');
+            let parsedHtml = '';
+            let errC = 0, warnC = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                if (!line.trim()) continue;
+                
+                let lower = line.toLowerCase();
+                let className = 'text-green-400/80 mb-1 border-l border-green-500/20 pl-2';
+                let iconHtml = '';
+                let extraPrefix = '';
+
+                // Classification Rules
+                if (lower.includes('fatal error') || lower.includes('uncaught error') || lower.includes('exception')) {
+                    className = 'fatal-block mb-2 py-1 pl-2 border-l-4 font-bold';
+                    iconHtml = '<span class="mr-2 opacity-80">[FATAL_ERR]</span>';
+                    errC++;
+                } else if (lower.includes("doesn't exist") && lower.includes("table")) {
+                    className = 'fatal-block mb-2 py-1 pl-2 border-l-4 font-black';
+                    iconHtml = '<span class="mr-2 animate-pulse">[DB_FATAL]</span>';
+                    errC++;
+                } else if (lower.includes('warning') || lower.includes('undefined array key') || lower.includes('notice')) {
+                    className = 'warn-block mb-1 py-1 pl-2 border-l-2';
+                    iconHtml = '<span class="mr-2 opacity-80">[WARN/NOTICE]</span>';
+                    warnC++;
+                } else if (lower.includes('parse error') || lower.includes('syntax error')) {
+                    className = 'warn-block mb-2 py-1 pl-2 border-l-4 !border-orange-500 !text-orange-400 font-bold';
+                    iconHtml = '<span class="mr-2 opacity-80">[SYNTAX_ERR]</span>';
+                    errC++;
+                }
+                
+                // Specific Logic Highlights
+                if (lower.includes('mail') || lower.includes('smtp')) {
+                    if (lower.includes('fail') || lower.includes('error')) {
+                        className = 'mail-fail-block mb-2 py-1 pl-2 border-l-4';
+                        iconHtml = '<span class="mr-2">[SMTP_CRITICAL]</span>';
+                        errC++;
+                    } else {
+                        className = 'mail-block mb-1 pl-2 border-l-2';
+                        iconHtml = '<span class="mr-2">[SMTP_TRACE]</span>';
+                    }
+                }
+                if (lower.includes('file not found') || lower.includes('no such file')) {
+                    className = 'info-block mb-1 py-1 pl-2 border-l-4 font-bold text-cyan-300';
+                    iconHtml = '<span class="mr-2">[MISSING_FILE]</span>';
+                    errC++;
+                }
+
+                parsedHtml += `<div class="${className} font-mono leading-relaxed break-all hover:bg-white/5 transition-colors group">
+                    <span class="text-green-700/50 mr-2 inline-block w-8 text-right select-none group-hover:text-green-500">${i+1}</span>
+                    ${iconHtml}${escapeHtml(line)}
+                </div>`;
+            }
+            
+            return { html: parsedHtml, errC, warnC };
         }
 
         function openModal(logStrEnc) {
             try {
                 const log = JSON.parse(decodeURIComponent(logStrEnc));
                 DOM.modalTitle.textContent = log.file;
-                DOM.modalBody.innerHTML = escapeHtml(log.preview) || 'Arquivo sem conteúdo texto legível ou erro nas linhas lidas.';
-                DOM.modalSize.textContent = formatBytes(log.size_bytes);
-                DOM.modalDate.textContent = formatDate(log.modified);
+                DOM.modalMeta.innerHTML = `<i data-lucide="hard-drive" class="w-3 h-3"></i> <span>SIZE: ${formatBytes(log.size_bytes)} | TS: ${formatDate(log.modified)}</span>`;
                 
+                const parseRs = parseLogContentFull(log.preview);
+                
+                DOM.modalBody.innerHTML = parseRs.html || 'ERR_NO_DATA';
+                DOM.errCount.innerText = `ERRORS_DETECTED: ${parseRs.errC}`;
+                if(parseRs.errC > 0) DOM.errCount.classList.add('text-red-500', 'font-bold', 'animate-pulse');
+                else DOM.errCount.classList.remove('text-red-500', 'font-bold', 'animate-pulse');
+
+                DOM.warnCount.innerText = `WARNINGS: ${parseRs.warnC}`;
+
                 DOM.modal.classList.remove('hidden');
                 
-                requestAnimationFrame(() => {
-                    DOM.modalBackdrop.classList.remove('opacity-0');
-                    DOM.modalContent.classList.remove('opacity-0', 'scale-95');
-                    DOM.modalContent.classList.add('scale-100');
-                });
+                // Trigger reflow to animate in
+                void DOM.modal.offsetWidth; 
+                
+                DOM.modal.classList.remove('opacity-0');
+                DOM.modalContent.classList.remove('opacity-0', 'scale-95');
+                DOM.modalContent.classList.add('scale-100');
+
+                lucide.createIcons();
             } catch(e) { console.error(e); }
         }
 
         function closeModal() {
-            DOM.modalBackdrop.classList.add('opacity-0');
+            DOM.modal.classList.add('opacity-0');
             DOM.modalContent.classList.remove('scale-100');
             DOM.modalContent.classList.add('opacity-0', 'scale-95');
             
             setTimeout(() => {
                 DOM.modal.classList.add('hidden');
+                DOM.modalBody.innerHTML = '';
             }, 300);
         }
 
         function copyLogContent() {
-            const text = DOM.modalBody.textContent;
+            // Need plain text without html tags
+            let text = DOM.modalBody.innerText.replace(/^[ \\t]*\\d+[ \\t]+/gm, ''); // crude remove line numbers
             navigator.clipboard.writeText(text).then(() => {
-                const btn = event.currentTarget;
+                const btn = document.getElementById('copy-btn');
                 const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-400"></i><span class="hidden sm:inline text-green-400">Copiado!</span>';
+                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-400"></i><span>[YANK_SUCCESS]</span>';
+                btn.classList.add('!border-green-400', '!text-green-400');
                 lucide.createIcons();
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
+                    btn.classList.remove('!border-green-400', '!text-green-400');
                     lucide.createIcons();
                 }, 2000);
             }).catch(e => console.error('Failed to copy', e));
         }
 
-        function toggleSidebar(forceState) {
-            const isHidden = DOM.sidebar.classList.contains('-translate-x-full');
-            const toShow = forceState !== undefined ? forceState : isHidden;
-
-            if (toShow) {
-                DOM.sidebar.classList.remove('-translate-x-full');
-                DOM.sidebarOverlay.classList.remove('hidden');
-                requestAnimationFrame(() => DOM.sidebarOverlay.classList.remove('opacity-0'));
-            } else {
-                DOM.sidebar.classList.add('-translate-x-full');
-                DOM.sidebarOverlay.classList.add('opacity-0');
-                setTimeout(() => DOM.sidebarOverlay.classList.add('hidden'), 300);
-            }
-        }
-
         DOM.searchInput.addEventListener('input', () => setTimeout(renderLogs, 300));
-        DOM.sortSelect.addEventListener('change', renderLogs);
-        DOM.limitSelect.addEventListener('change', renderLogs);
         
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && !DOM.modal.classList.contains('hidden')) closeModal();
         });
 
+        // Init
         renderProjects();
+        // default select first if wanted, or let it 'AWAITING_TARGET_SELECTION'
     </script>
 </body>
 </html>
