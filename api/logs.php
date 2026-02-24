@@ -10,14 +10,31 @@ header('Content-Type: application/json');
 
 $projectFilter = $_GET['project'] ?? 'all';
 
-// O painel estará em domains/logs.protocolosead.com/
-// Então .logs estará em 2 níveis acima: ../../.logs
-// Nota: Em testes locais, isso pode falhar. Se falhar, defina um caminho de fallback ou absoluto.
-$logsDir = realpath(__DIR__ . '/../../../../.logs'); 
+// Vamos montar dinamicamente o path a partir do DOCUMENT_ROOT da Hostinger
+// O script roda em /home/u492577848/domains/logs.protocolosead.com/public_html/api/logs.php
+// E os logs estão provavelmente em /home/u492577848/.logs ou similar
+$base = dirname($_SERVER['DOCUMENT_ROOT'], 2); // volta 2 niveis de /domains/.../public_html = /home/u492577848
 
-// Fallback para ambiente local se a pasta acima não existir (ex: rodando no próprio PC)
-if (!$logsDir || !is_dir($logsDir)) {
-    // Tenta achar na raiz do projeto (para testes locais)
+// Tentativas de encontrar a pasta .logs correta
+$possiblePaths = [
+    $base . '/.logs',
+    dirname($_SERVER['DOCUMENT_ROOT'], 3) . '/.logs', // volta 3 niveis
+    realpath(__DIR__ . '/../../../../../.logs'), // Subindo a partir do arquivo api/logs.php
+    realpath(__DIR__ . '/../../../../.logs'),
+    realpath(__DIR__ . '/../../../.logs'),
+    realpath(__DIR__ . '/../../.logs')
+];
+
+$logsDir = false;
+foreach ($possiblePaths as $path) {
+    if ($path && is_dir($path)) {
+        $logsDir = $path;
+        break;
+    }
+}
+
+// Fallback para ambiente local se nada foi encontrado
+if (!$logsDir) {
     $logsDir = realpath(__DIR__ . '/../.logs');
     if (!$logsDir || !is_dir($logsDir)) {
          echo json_encode([
@@ -25,7 +42,10 @@ if (!$logsDir || !is_dir($logsDir)) {
             "project" => $projectFilter,
             "count" => 0,
             "data" => [],
-            "error" => "Log directory not found: " . __DIR__ . '/../../../../.logs'
+            "error" => "Log directory not found. Please verify paths.",
+            "debug_tested_paths" => $possiblePaths,
+            "debug___DIR__" => __DIR__,
+            "debug_DOCUMENT_ROOT" => $_SERVER['DOCUMENT_ROOT'] ?? 'not set'
         ]);
         exit;
     }
