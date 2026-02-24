@@ -1,237 +1,165 @@
-@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap");
+/* assets/css/theme.css */
 
 /*
- * eDEX-UI / SCI-FI THEME SETTINGS
- * Focado em tons de Cyan/Teal Escuro com Neon Glows 
- * para um visual HUD / Hacker Analítico realista.
+ * VSCode Dark Theme Colors Settings
+ * Paleta fiel do tema Dark+ do Visual Studio Code.
  */
 :root {
-    --bg-dark: #03080c;
-    --panel-bg: rgba(6, 17, 24, 0.7);
-    --panel-border: rgba(0, 240, 255, 0.15);
-
-    --neon-cyan: #00f0ff;
-    --neon-green: #00ff88;
-    --neon-red: #ff0055;
-    --neon-orange: #ffaa00;
-    --neon-purple: #b000ff;
-
-    --text-main: #d3ebed;
-    --text-dim: #3a6875;
-
-    /* IDE Colors (Mantine/VSCode) para o texto LIMPOS E LEGIVEIS */
-    --hl-string: #a3be8c; /* Verde opaco */
-    --hl-var: #88c0d0; /* Azul glacial */
-    --hl-func: #ebcb8b; /* Amarelo ouro */
-    --hl-keyword: #b48ead; /* Roxo suave */
-    --hl-path: #5e81ac; /* Azul escuro link */
-    --hl-time: #4c566a; /* Cinza claro */
+    --vs-bg: #1e1e1e;
+    --vs-panel: #252526;
+    --vs-sidebar: #333333;
+    --vs-border: #444444;
+    --vs-text: #cccccc; /* Texto base padrão */
+    --vs-muted: #858585; /* Comentários/Infos fracas */
+    --vs-blue-link: #3794ff; /* Links/Paths */
+    --vs-blue: #9cdcfe; /* Variáveis */
+    --vs-green: #ce9178; /* Strings reais (laranja claro no VSCode) */
+    --vs-yellow: #dcdcaa; /* Functions */
+    --vs-orange: #d7ba7d; /* Keywords alert */
+    --vs-red: #f44747; /* Errors */
+    --vs-purple: #c586c0; /* Keywords de controle */
+    --vs-cyan: #4ec9b0; /* Tipos/Classes */
 }
 
-/* ==================
-   GLOBAL & LAYOUT
-   ================== */
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
+    background-color: var(--vs-bg);
+    color: var(--vs-text);
     overflow: hidden;
-    font-family: "Rajdhani", sans-serif;
-
-    /* Background Sci-Fi Grid */
-    background-image:
-        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-    background-size: 30px 30px;
-    background-position: center;
 }
 
-h1,
-h2,
-h3,
-.font-tech {
-    font-family: "Share Tech Mono", monospace;
-}
-
-/* Custom Cyber Scrollbars */
+/* Scrollbars VSCode Style */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 14px;
+    height: 14px;
 }
 ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.5);
-    border-left: 1px solid var(--panel-border);
+    background: var(--vs-bg);
 }
 ::-webkit-scrollbar-thumb {
-    background: var(--text-dim);
-    border-radius: 4px;
+    background: #424242;
+    border: 4px solid var(--vs-bg);
+    border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--neon-cyan);
-    box-shadow: 0 0 10px var(--neon-cyan);
+    background: #4f4f4f;
 }
 ::-webkit-scrollbar-corner {
-    background: transparent;
+    background: var(--vs-bg);
 }
 
-/* ==================
-   UI COMPONENT CLASSES
-   ================== */
-.hud-panel {
-    background: var(--panel-bg);
-    border: 1px solid var(--panel-border);
-    backdrop-filter: blur(8px);
-    position: relative;
-    box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.02);
-}
-
-.hud-panel::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 6px;
-    height: 6px;
-    border-top: 1px solid var(--neon-cyan);
-    border-left: 1px solid var(--neon-cyan);
-}
-.hud-panel::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 6px;
-    height: 6px;
-    border-bottom: 1px solid var(--neon-cyan);
-    border-right: 1px solid var(--neon-cyan);
-}
-
-.glitch-text {
-    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
-}
-
-/* Animações Keyframe Modernas */
+/* Utility Classes and Animations */
 .fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
+    animation: fadeIn 0.2s ease-out forwards;
 }
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
-.pulse-glow {
-    animation: pulseGlow 2s infinite alternate;
+.slide-in-right {
+    animation: slideIn 0.2s ease-out forwards;
 }
-@keyframes pulseGlow {
+@keyframes slideIn {
     from {
-        box-shadow: 0 0 5px rgba(0, 255, 136, 0.2);
+        opacity: 0;
+        transform: translateX(10px);
     }
     to {
-        box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+        opacity: 1;
+        transform: translateX(0);
     }
 }
 
-.pulse-glow-red {
-    animation: pulseGlowRed 1.5s infinite alternate;
+/* Base Classes */
+.bg-vs-bg {
+    background-color: var(--vs-bg);
 }
-@keyframes pulseGlowRed {
-    from {
-        box-shadow: 0 0 5px rgba(255, 0, 85, 0.2);
-        border-color: rgba(255, 0, 85, 0.4);
-    }
-    to {
-        box-shadow: 0 0 25px rgba(255, 0, 85, 0.7);
-        border-color: var(--neon-red);
-    }
+.bg-vs-panel {
+    background-color: var(--vs-panel);
+}
+.bg-vs-sidebar {
+    background-color: var(--vs-sidebar);
+}
+.border-vs-border {
+    border-color: var(--vs-border);
 }
 
-/* NavBar da Esquerda */
+.text-vs-text {
+    color: var(--vs-text);
+}
+.text-vs-muted {
+    color: var(--vs-muted);
+}
+.text-vs-blue {
+    color: var(--vs-blue-link);
+}
+
+/* Navigation & Sidebar Items */
 .nav-item {
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.1s;
     border-left: 2px solid transparent;
-    color: var(--text-dim);
 }
 .nav-item.active {
-    background: linear-gradient(90deg, rgba(0, 240, 255, 0.15) 0%, transparent 100%);
-    border-left-color: var(--neon-cyan);
-    color: var(--neon-cyan);
-    font-weight: 600;
+    background-color: #37373d;
+    color: #ffffff;
 }
 .nav-item:hover:not(.active) {
-    background: rgba(0, 240, 255, 0.05);
-    color: var(--text-main);
+    background-color: #2a2d2e;
 }
 
-/* Tabs */
-.tab-btn {
-    color: var(--text-dim);
-    transition: all 0.2s ease;
-    border-bottom: 2px solid transparent;
-}
-.tab-btn:hover {
-    color: var(--text-main);
-}
-.tab-btn.active {
-    color: var(--neon-cyan);
-    border-bottom-color: var(--neon-cyan);
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
-}
-
-.tab-content {
-    display: none !important;
-}
-.tab-content.active {
-    display: flex !important;
-}
-
-/* Log Cards - Lateral */
+/* Log Cards Style */
 .log-card {
-    background-color: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--panel-border);
-    transition: all 0.2s;
+    background-color: var(--vs-panel);
+    border: 1px solid var(--vs-border);
+    transition:
+        background-color 0.1s,
+        border-color 0.1s;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
 }
 .log-card:hover {
-    border-color: var(--neon-cyan);
-    background-color: rgba(0, 240, 255, 0.05);
-}
-.log-card::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background-color: var(--neon-cyan);
-    transform: scaleY(0);
-    transition: transform 0.2s;
-}
-.log-card:hover::before {
-    transform: scaleY(1);
+    background-color: #2a2d2e;
+    border-color: #555555;
 }
 
-/* ==================
-   IDE CONSOLE - TEXT & HIGHLIGHTS
-   ================== */
+/* 
+ * TABS SYSTEM CLASSES 
+ */
+.tab-btn {
+    color: var(--vs-muted);
+    border-bottom: 1px solid transparent;
+    transition: all 0.1s;
+}
+.tab-btn:hover {
+    color: var(--vs-text);
+}
+.tab-btn.active {
+    color: #ffffff;
+    border-bottom-color: var(--vs-blue-link);
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: flex;
+}
+
+/* 
+ * SYNTAX HIGHLIGHTING (VSCODE DARK THEME - NO SOLID BACKGROUNDS)
+ */
 .log-line {
     display: flex;
     padding: 0 1rem;
-    min-height: 1.35rem;
+    min-height: 1.35rem; /* Menor altura pra caber mais */
     position: relative;
-    font-family: "Share Tech Mono", monospace;
     font-size: 13px;
     line-height: 1.5;
-    color: var(--text-main);
 }
 .log-line:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: #2a2d2e;
 }
 
 .log-num {
@@ -239,61 +167,54 @@ h3,
     flex-shrink: 0;
     text-align: right;
     padding-right: 1.5rem;
-    color: var(--text-dim);
+    color: #858585; /* Igual numero de linha no vsc */
     user-select: none;
     margin-right: 0.5rem;
-    border-right: 1px solid rgba(0, 240, 255, 0.1);
 }
 
-/* Texto limpo e colorido sem afetar fundos */
+/* Core Colors based on regex matches */
 .hl-timestamp {
-    color: var(--hl-time);
+    color: var(--vs-muted);
 }
 .hl-path {
-    color: var(--hl-path);
+    color: var(--vs-blue-link);
     text-decoration: underline;
-    text-decoration-color: transparent;
-    transition: 0.2s;
     cursor: pointer;
 }
-.hl-path:hover {
-    text-decoration-color: var(--hl-path);
-}
 .hl-string {
-    color: var(--hl-string);
+    color: var(--vs-green);
 }
 .hl-var {
-    color: var(--hl-var);
+    color: var(--vs-blue);
 }
 .hl-keyword {
-    color: var(--hl-keyword);
+    color: var(--vs-purple);
 }
 .hl-func {
-    color: var(--hl-func);
+    color: var(--vs-yellow);
 }
 .hl-type {
-    color: var(--neon-cyan);
+    color: var(--vs-cyan);
 }
 
+/* Severities & Actions */
 .hl-error {
-    color: var(--neon-red);
-    font-weight: bold;
-    text-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    color: var(--vs-red);
 }
 .hl-warning {
-    color: var(--neon-orange);
+    color: var(--vs-orange);
 }
 .hl-info {
-    color: var(--hl-path);
+    color: var(--vs-blue-link);
 }
 
-/* Marcador fino lateral (para avisos e erros) */
+/* Borda esquerda discreta para avisos cruciais, sem pintar o fundo inteiro */
 .row-critical {
-    border-left: 2px solid var(--neon-red);
+    border-left: 3px solid var(--vs-red);
 }
 .row-warning {
-    border-left: 2px solid var(--neon-orange);
+    border-left: 3px solid var(--vs-orange);
 }
 .row-mail {
-    border-left: 2px solid var(--neon-purple);
+    border-left: 3px solid var(--vs-purple);
 }

@@ -1,67 +1,60 @@
 // assets/js/app.js
 
-// Previne execução prematura e referências nulas transferindo DOM bindings p/ dento do onload
-let DOM = {};
+document.addEventListener("DOMContentLoaded", () => {
+    lucide.createIcons();
+    initApp();
+});
 
 const state = {
     currentProject: null,
     logs: [],
-    // Adicionamos info para saber onde puxar se for global dashboard
     projects: [
-        { id: "all", name: "OVERVIEW / TODOS" },
-        { id: "protocolosead_com", name: "SYS • PROTOCOLO SEAD" },
-        { id: "estagiopaudosferros_com", name: "SYS • ESTÁGIO PDF" },
-        { id: "sema_paudosferros", name: "SYS • SEMA PDF" },
-        { id: "demutran_protocolosead_com", name: "SYS • DEMUTRAN SEAD" },
-        { id: "demutranpaudosferros", name: "SYS • DEMUTRAN PDF" },
-        { id: "suap2_estagiopaudosferros_com", name: "DB  • SUAP 2" },
-        { id: "supaco_estagiopaudosferros_com", name: "DB  • SUPACO" },
-        { id: "api_estagiopaudosferros_com", name: "API • ESTÁGIO" },
-        { id: "api_protocolosead_com", name: "API • PROTOCOLO" },
+        { id: "all", name: "Todos os Projetos" },
+        { id: "protocolosead_com", name: "Protocolo SEAD" },
+        { id: "estagiopaudosferros_com", name: "Estágio PDF" },
+        { id: "sema_paudosferros", name: "SEMA PDF" },
+        { id: "demutran_protocolosead_com", name: "Demutran SEAD" },
+        { id: "demutranpaudosferros", name: "Demutran PDF" },
+        { id: "suap2_estagiopaudosferros_com", name: "SUAP 2 (DB)" },
+        { id: "supaco_estagiopaudosferros_com", name: "Supaco (DB)" },
+        { id: "api_estagiopaudosferros_com", name: "API Estágio" },
+        { id: "api_protocolosead_com", name: "API Protocolo" },
     ],
-    activeTab: "logs",
+    activeTab: "logs", // 'dashboard' ou 'logs'
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-    DOM = {
-        projectList: document.getElementById("project-list"),
-        logsContainer: document.getElementById("logs-container"),
-        projectTitle: document.getElementById("current-project-title"),
+const DOM = {
+    projectList: document.getElementById("project-list"),
+    logsContainer: document.getElementById("logs-container"),
 
-        // Tabs
-        tabBtnDashboard: document.getElementById("tab-btn-dashboard"),
-        tabBtnLogs: document.getElementById("tab-btn-logs"),
+    // Titulos e Tabs
+    projectTitle: document.getElementById("current-project-title"),
+    tabBtnDashboard: document.getElementById("tab-btn-dashboard"),
+    tabBtnLogs: document.getElementById("tab-btn-logs"),
 
-        // Views Principais
-        viewGlobalDashboard: document.getElementById("view-global-dashboard"), // Nova view de todos projetos
-        viewProject: document.getElementById("view-project"),
+    // Views principais
+    viewEmpty: document.getElementById("view-empty"),
+    viewProject: document.getElementById("view-project"),
 
-        tabContentDashboard: document.getElementById("tab-content-dashboard"),
-        tabContentLogs: document.getElementById("tab-content-logs"),
+    // Conteudos de Tab
+    tabContentDashboard: document.getElementById("tab-content-dashboard"),
+    tabContentLogs: document.getElementById("tab-content-logs"),
 
-        // Console Core
-        searchInput: document.getElementById("search-input"),
-        consoleEmpty: document.getElementById("console-empty"),
-        consoleActive: document.getElementById("console-active"),
-        consoleTitle: document.getElementById("console-title"),
-        consoleBody: document.getElementById("console-body"),
+    // Componentes da Aba Logs
+    searchInput: document.getElementById("search-input"),
+    consoleEmpty: document.getElementById("console-empty"),
+    consoleActive: document.getElementById("console-active"),
+    consoleTitle: document.getElementById("console-title"),
+    consoleBody: document.getElementById("console-body"),
 
-        // Projetos Estatisticas
-        statTotalLogs: document.getElementById("stat-total-logs"),
-        statTotalSize: document.getElementById("stat-total-size"),
-        statErrors: document.getElementById("stat-errors"),
-        statWarns: document.getElementById("stat-warns"),
+    // Estatísticas da Dashboard
+    statTotalLogs: document.getElementById("stat-total-logs"),
+    statTotalSize: document.getElementById("stat-total-size"),
+    statErrors: document.getElementById("stat-errors"),
+    statWarns: document.getElementById("stat-warns"),
 
-        healthScore: document.getElementById("health-score"),
-        healthStatus: document.getElementById("health-status"),
-        healthRing: document.getElementById("health-ring"),
-
-        spinner: document.getElementById("global-spinner"),
-    };
-
-    lucide.createIcons();
-    initApp();
-});
+    spinner: document.getElementById("global-spinner"),
+};
 
 // Utils
 const formatBytes = bytes => {
@@ -83,37 +76,28 @@ const formatDate = dateString => {
 };
 
 // ==========================================
-// INIT APP
+// INICIALIZAÇÃO E NAVEGAÇÃO MAIN
 // ==========================================
 function initApp() {
     renderProjectsSidebar();
 
-    // Liga botoes
+    // Listeners de Tabs
     DOM.tabBtnDashboard.addEventListener("click", () => switchTab("dashboard"));
     DOM.tabBtnLogs.addEventListener("click", () => switchTab("logs"));
-    DOM.searchInput.addEventListener("input", () => setTimeout(renderLogCards, 300));
 
-    // Força inicio na tab OVERVIEW / TODOS (id: 'all')
-    selectProject("all");
+    DOM.searchInput.addEventListener("input", () => setTimeout(renderLogCards, 300));
 }
 
 function renderProjectsSidebar() {
     DOM.projectList.innerHTML = state.projects
         .map(p => {
             const isActive = state.currentProject === p.id;
-            let iconStr =
-                p.id === "all"
-                    ? "layout-grid"
-                    : p.id.includes("DB")
-                      ? "database"
-                      : p.id.includes("API")
-                        ? "cpu"
-                        : "box";
+            let iconStr = p.id === "all" ? "layout-grid" : p.id.includes("db") ? "database" : "box";
 
             return `
         <button onclick="selectProject('${p.id}')" 
-                class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left font-tech tracking-wider uppercase
-                ${isActive ? "active" : ""}">
+                class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm text-left
+                ${isActive ? "active" : "text-vs-muted"}">
             <i data-lucide="${iconStr}" class="w-4 h-4 shrink-0 opacity-80"></i>
             <span class="truncate">${p.name}</span>
         </button>
@@ -127,260 +111,39 @@ function selectProject(projectId) {
     state.currentProject = projectId;
     const proj = state.projects.find(p => p.id === projectId);
 
+    DOM.projectTitle.textContent = proj ? proj.name : "Projeto Selecionado";
+
+    DOM.viewEmpty.style.display = "none";
+    DOM.viewProject.style.display = "flex";
+
+    closeConsole();
     renderProjectsSidebar();
 
-    // Se a aba for OVERVIEW MASTER
-    if (projectId === "all") {
-        DOM.viewProject.style.display = "none";
-        DOM.viewGlobalDashboard.style.display = "flex";
-        loadGlobalDashboardData();
-    } else {
-        // Aba Individual
-        DOM.viewGlobalDashboard.style.display = "none";
-        DOM.viewProject.style.display = "flex";
-
-        DOM.projectTitle.innerHTML = `<span class="opacity-50">TARGET:</span> ${proj ? proj.name : ""}`;
-        closeConsole();
-        switchTab("dashboard"); // Volta pra tab de Dashboard local do Projeto
-
-        loadLogsFromApi(); // Fetch pra um só
-    }
+    // Força ir pra tab de Resumo ao trocar projeto
+    switchTab("dashboard");
+    loadLogsFromApi();
 }
 
 function switchTab(tabId) {
     state.activeTab = tabId;
 
+    // Atualiza Botoes
     DOM.tabBtnDashboard.classList.toggle("active", tabId === "dashboard");
     DOM.tabBtnLogs.classList.toggle("active", tabId === "logs");
 
+    // Atualiza Conteudo
     DOM.tabContentDashboard.classList.toggle("active", tabId === "dashboard");
     DOM.tabContentLogs.classList.toggle("active", tabId === "logs");
 }
 
 // ==========================================
-// NOVA FUNCIONALIDADE: DASHBOARD GLOBAL
-// Extrai os stats do servidor massivo
-// ==========================================
-let liveTerminalTimeout = null;
-
-async function loadGlobalDashboardData() {
-    DOM.spinner.style.display = "flex";
-    const globalGrid = document.getElementById("global-grid-projects");
-    const recentLogsContainer = document.getElementById("global-recent-logs");
-    const liveTerminal = document.getElementById("global-live-terminal");
-
-    globalGrid.innerHTML = `
-        <div class="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 hud-panel h-48 flex items-center justify-center font-tech text-[var(--neon-cyan)] opacity-50 pulse-glow">
-            ANALISANDO TODOS OS NODES... aguarde
-        </div>
-    `;
-
-    try {
-        const response = await fetch(`api/logs.php?project=all`);
-        const data = await response.json();
-
-        if (data.data) {
-            let globalErrors = 0;
-            let globCount = data.data.length;
-            let globSize = data.data.reduce((a, b) => a + b.size_bytes, 0);
-
-            const projectMap = {};
-            state.projects.forEach(p => {
-                if (p.id !== "all") projectMap[p.id] = { logs: [], err: 0, w: 0, latest: null };
-            });
-
-            data.data.forEach(log => {
-                const lowerPrev = (log.preview || "").toLowerCase();
-                let e = 0,
-                    w = 0;
-
-                if (
-                    lowerPrev.includes("fatal error") ||
-                    lowerPrev.includes("uncaught") ||
-                    lowerPrev.includes("doesn't exist") ||
-                    lowerPrev.includes("fail")
-                )
-                    e++;
-                if (lowerPrev.includes("warning") || lowerPrev.includes("notice")) w++;
-                globalErrors += e;
-
-                let targetId = "unknown";
-                for (let i = 1; i < state.projects.length; i++) {
-                    const p = state.projects[i];
-                    if (log.file.includes(p.id)) {
-                        targetId = p.id;
-                        break;
-                    }
-                }
-
-                if (targetId !== "unknown" && projectMap[targetId]) {
-                    projectMap[targetId].logs.push(log);
-                    projectMap[targetId].err += e;
-                    projectMap[targetId].w += w;
-                    if (
-                        !projectMap[targetId].latest ||
-                        new Date(log.modified) > new Date(projectMap[targetId].latest)
-                    ) {
-                        projectMap[targetId].latest = log.modified;
-                    }
-                }
-            });
-
-            document.getElementById("m-stat-files").textContent = globCount;
-            document.getElementById("m-stat-size").textContent = formatBytes(globSize);
-            document.getElementById("m-stat-errs").textContent = globalErrors;
-
-            let gridHtml = "";
-            for (let i = 1; i < state.projects.length; i++) {
-                const p = state.projects[i];
-                const mapData = projectMap[p.id];
-                const isEmpty = mapData.logs.length === 0;
-
-                let boxBorder = "border-transparent";
-                let iconClass = "text-[var(--text-dim)]";
-                let statusMsg = "SECURE / ONLINE";
-
-                if (!isEmpty) {
-                    if (mapData.err > 0) {
-                        boxBorder = "border-t-2 border-t-[var(--neon-red)] bg-red-950/20";
-                        iconClass = "text-[var(--neon-red)] pulse-glow-red";
-                        statusMsg = `${mapData.err} CRITICAL(S)`;
-                    } else if (mapData.w > 0) {
-                        boxBorder = "border-t-[var(--neon-orange)]";
-                        iconClass = "text-[var(--neon-orange)]";
-                        statusMsg = `${mapData.w} WARNING(S)`;
-                    } else {
-                        boxBorder = "border-t-[var(--neon-cyan)]";
-                        iconClass = "text-[var(--neon-cyan)]";
-                    }
-                } else {
-                    statusMsg = "OFFLINE / EMPTY";
-                }
-
-                gridHtml += `
-                    <div class="hud-panel p-4 flex flex-col hover:bg-[var(--text-dim)]/10 transition-colors cursor-pointer ${boxBorder}" onclick="selectProject('${p.id}')">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-tech font-bold text-[#d3ebed] tracking-widest">${p.name}</span>
-                            <i data-lucide="${p.id.includes("DB") ? "database" : "server"}" class="w-4 h-4 ${iconClass}"></i>
-                        </div>
-                        
-                        <div class="text-[10px] font-tech text-[var(--text-dim)] mb-1 uppercase">FILES TRACKED: <span class="text-white">${mapData.logs.length}</span></div>
-                        <div class="text-[10px] font-tech text-[var(--text-dim)] mb-4 uppercase">LAST UPDATE: <span class="text-white">${mapData.latest ? formatDate(mapData.latest) : "N/A"}</span></div>
-                        
-                        <div class="mt-auto flex items-center gap-2 pt-3 border-t border-[var(--panel-border)] border-dashed">
-                            <i data-lucide="${mapData.err > 0 ? "shield-alert" : "shield-check"}" class="w-3 h-3 ${iconClass}"></i>
-                            <span class="text-xs font-tech ${mapData.err > 0 ? "text-[var(--neon-red)]" : "text-[var(--text-dim)]"} uppercase tracking-widest">${statusMsg}</span>
-                        </div>
-                    </div>
-                `;
-            }
-            globalGrid.innerHTML = gridHtml;
-
-            // Popula LATEST SYSTEM ACTIVITY
-            const allLogsSorted = [...data.data].sort((a, b) => new Date(b.modified) - new Date(a.modified));
-            const top15 = allLogsSorted.slice(0, 15);
-
-            recentLogsContainer.innerHTML = top15
-                .map(log => {
-                    const isCrit =
-                        log.preview.toLowerCase().includes("fatal error") || log.preview.toLowerCase().includes("fail");
-                    const crClass = isCrit ? "text-[var(--neon-red)] font-bold" : "text-[var(--neon-cyan)]";
-                    return `
-                <div onclick="selectProjectByFile('${log.file}')" class="flex items-center justify-between p-2 hover:bg-[rgba(255,255,255,0.05)] cursor-pointer border-b border-[var(--panel-border)] border-dashed last:border-0 fade-in">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="activity" class="w-3.5 h-3.5 ${crClass} opacity-80"></i>
-                        <span class="text-xs font-mono text-[#c9e0e5] font-semibold truncate max-w-[200px] md:max-w-xs">${log.file}</span>
-                    </div>
-                    <span class="text-[10px] font-tech text-[var(--text-dim)]">${formatDate(log.modified)}</span>
-                </div>
-                `;
-                })
-                .join("");
-            lucide.createIcons();
-
-            // =========================
-            // SIMULADOR LIVE STREAMING
-            // =========================
-            if (liveTerminalTimeout) clearTimeout(liveTerminalTimeout);
-            liveTerminal.innerHTML = "";
-
-            // Pega amostras de linhas de vários arquivos para simular feed
-            let streamLines = [];
-            top15.forEach(log => {
-                if (log.preview) {
-                    const lines = log.preview
-                        .split("\n")
-                        .filter(l => l.trim().length > 10)
-                        .slice(-5);
-                    lines.forEach(l => {
-                        const parsed = buildVscodeLine(`[${log.file}] ` + l, ">");
-                        if (parsed) streamLines.push(parsed);
-                    });
-                }
-            });
-            // Embaralha levemente as linhas para parecer um stream mixed
-            streamLines = streamLines.sort(() => 0.5 - Math.random());
-
-            let idx = 0;
-            const printNextLine = () => {
-                if (idx >= streamLines.length) {
-                    idx = 0; // recomeça pra não apagar terminal
-                }
-
-                const lineDiv = document.createElement("div");
-                lineDiv.className = "fade-in";
-                lineDiv.innerHTML = streamLines[idx];
-                liveTerminal.appendChild(lineDiv);
-
-                // Mantém autoscroll
-                liveTerminal.scrollTop = liveTerminal.scrollHeight;
-
-                // Keep max 50 lines to prevent memory leak
-                if (liveTerminal.children.length > 50) {
-                    liveTerminal.removeChild(liveTerminal.firstChild);
-                }
-
-                idx++;
-                // Velocidade aleatória para simular tráfego
-                liveTerminalTimeout = setTimeout(printNextLine, Math.random() * 800 + 200);
-            };
-
-            if (streamLines.length > 0) printNextLine();
-            else
-                liveTerminal.innerHTML =
-                    '<div class="text-[var(--neon-cyan)] font-tech text-xs">NO INCOMING SIGNALS...</div>';
-        } else {
-            globalGrid.innerHTML = `<div>Erro na extração global: ${data.error}</div>`;
-        }
-    } catch (error) {
-        console.error(error);
-        globalGrid.innerHTML = `<div class="text-[var(--neon-red)]">Global Network Failure.</div>`;
-    } finally {
-        DOM.spinner.style.display = "none";
-    }
-}
-
-// Helper auxiliar p clicar no activity log e ir pro projeto mestre dele
-window.selectProjectByFile = function (filename) {
-    for (let i = 1; i < state.projects.length; i++) {
-        if (filename.includes(state.projects[i].id)) {
-            selectProject(state.projects[i].id);
-            return;
-        }
-    }
-    // se nao achar exact match
-    alert("File target project unresolved.");
-};
-
-// ==========================================
-// API FETCH INDIVIDUAL (TABS DO PROJETO)
+// API FETCH E DASHBOARD
 // ==========================================
 async function loadLogsFromApi() {
-    if (!state.currentProject || state.currentProject === "all") return;
+    if (!state.currentProject) return;
 
     DOM.spinner.style.display = "flex";
-    DOM.logsContainer.innerHTML =
-        '<div class="text-center text-vs-dim text-xs font-tech p-4 glitch-text">INITIALIZING READ...</div>';
+    DOM.logsContainer.innerHTML = '<div class="text-center text-vs-muted text-xs p-4">Carregando...</div>';
 
     try {
         const response = await fetch(`api/logs.php?project=${encodeURIComponent(state.currentProject)}`);
@@ -391,32 +154,18 @@ async function loadLogsFromApi() {
             updateDashboardStats();
             renderLogCards();
         } else {
-            DOM.logsContainer.innerHTML = `<div class="text-xs text-[var(--neon-red)] p-3 text-center border border-[var(--neon-red)] bg-red-950/20">API EXCEPTION: ${data.error || "Nulo"}</div>`;
+            DOM.logsContainer.innerHTML = `<div class="text-xs text-[#f44747] p-3 text-center">API Retornou Erro: ${data.error || "Nulo"}</div>`;
         }
     } catch (error) {
         console.error(error);
-        DOM.logsContainer.innerHTML = `<div class="text-xs text-[var(--neon-red)] p-3 text-center border border-[var(--neon-red)] bg-red-950/20">NETWORK FAILURE</div>`;
+        DOM.logsContainer.innerHTML = `<div class="text-xs text-[#f44747] p-3 text-center">Falha de requisição. Verifique api/logs.php</div>`;
     } finally {
         DOM.spinner.style.display = "none";
     }
 }
 
-function animateValue(obj, start, end, duration) {
-    if (!obj) return;
-    let startTimestamp = null;
-    const step = timestamp => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.innerHTML = Math.floor(progress * (end - start) + start);
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        }
-    };
-    window.requestAnimationFrame(step);
-}
-
+// Calcula estatísticas rápiadas baseadas nas previews de log para montar a Dashboard
 function updateDashboardStats() {
-    if (!DOM.statTotalLogs) return; // safety
     DOM.statTotalLogs.textContent = state.logs.length;
 
     const totalBytes = state.logs.reduce((acc, log) => acc + log.size_bytes, 0);
@@ -425,56 +174,23 @@ function updateDashboardStats() {
     let totalE = 0;
     let totalW = 0;
 
+    // Leitura rasa das previews de todos os arquivos do projeto
     state.logs.forEach(log => {
         const lower = (log.preview || "").toLowerCase();
-        if (
-            lower.includes("fatal error") ||
-            lower.includes("uncaught error") ||
-            lower.includes("doesn't exist") ||
-            lower.includes("fail")
-        )
-            totalE++;
+
+        // Estima erros pelo preview cortado (nao e 100% preciso, mas util p dash)
+        if (lower.includes("fatal error") || lower.includes("uncaught error")) totalE++;
+        if (lower.includes("doesn't exist") || lower.includes("fail")) totalE++;
+
         if (lower.includes("warning") || lower.includes("notice")) totalW++;
     });
 
-    DOM.statErrors.textContent = totalE;
-    DOM.statWarns.textContent = totalW;
-
-    // System Health Core
-    let score = 100;
-    score -= totalE * 15;
-    score -= totalW * 3;
-    if (score < 0) score = 0;
-    if (state.logs.length === 0) score = 100;
-
-    DOM.healthScore.textContent = `${score}%`;
-    animateValue(DOM.healthScore, 0, score, 800);
-
-    let statusTxt = "INTEGRITY: STABLE";
-    let ringColor = "var(--neon-cyan)";
-    DOM.healthRing.className = "w-32 h-32 rounded-full border-4 flex items-center justify-center pulse-glow";
-
-    if (score < 90 && score >= 50) {
-        statusTxt = "INTEGRITY: WARNING";
-        ringColor = "var(--neon-orange)";
-        DOM.healthRing.classList.remove("pulse-glow");
-        DOM.healthRing.style.boxShadow = "0 0 15px var(--neon-orange)";
-    } else if (score < 50) {
-        statusTxt = "INTEGRITY: CRITICAL";
-        ringColor = "var(--neon-red)";
-        DOM.healthRing.className = "w-32 h-32 rounded-full border-4 flex items-center justify-center pulse-glow-red";
-        DOM.healthScore.classList.add("text-[var(--neon-red)]", "glitch-text");
-    } else {
-        DOM.healthScore.classList.remove("text-[var(--neon-red)]", "glitch-text");
-        DOM.healthRing.style.boxShadow = "";
-    }
-
-    DOM.healthStatus.textContent = statusTxt;
-    DOM.healthRing.style.borderColor = ringColor;
+    DOM.statErrors.textContent = totalE > 0 ? `+${totalE} (Estimados)` : "Zero rastreados";
+    DOM.statWarns.textContent = totalW > 0 ? `+${totalW} (Estimados)` : "Nenhum recente";
 }
 
 // ==========================================
-// RENDER CONSOLE (VSCODE ESTILO LIMPO) No Fundo Branco corrigido para negro
+// RENDERIZAÇÃO DE LISTA DE LOGS E CONSOLE
 // ==========================================
 function renderLogCards() {
     let filtered = [...state.logs];
@@ -483,9 +199,9 @@ function renderLogCards() {
 
     if (filtered.length === 0) {
         DOM.logsContainer.innerHTML = `
-            <div class="col-span-full text-center py-10 opacity-30 fade-in font-tech">
-                <i data-lucide="scan" class="w-8 h-8 mx-auto mb-2"></i>
-                <p class="text-xs">NO ASSETS FOUND IN DIRECTORY</p>
+            <div class="col-span-full text-center py-10 text-vs-muted fade-in">
+                <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
+                <p class="text-xs">Nenhum log corresponde ao filtro ou o projeto está vazio.</p>
             </div>
         `;
         lucide.createIcons();
@@ -495,42 +211,23 @@ function renderLogCards() {
     DOM.logsContainer.innerHTML = filtered
         .map(log => {
             const previewLower = log.preview.toLowerCase();
-            let stateObj = { icon: "file-json", border: "", glow: "" };
+            const pathMatch = log.file.split("_")[1] || ""; // ex error_log_demutran.com
 
-            if (
-                previewLower.includes("fatal error") ||
-                previewLower.includes("fail") ||
-                previewLower.includes("doesn't exist")
-            ) {
-                stateObj = {
-                    icon: "alert-triangle",
-                    border: "border-l-2 border-l-[var(--neon-red)]",
-                    glow: "text-[var(--neon-red)]",
-                };
-            } else if (previewLower.includes("warning")) {
-                stateObj = {
-                    icon: "alert-circle",
-                    border: "border-l-2 border-l-[var(--neon-orange)]",
-                    glow: "text-[var(--neon-orange)]",
-                };
-            } else {
-                stateObj = {
-                    icon: "file-text",
-                    border: "border-l-2 border-l-transparent",
-                    glow: "text-[var(--neon-cyan)]",
-                };
-            }
+            // Determina se a preview do arquivo aponta algo critico
+            let leftBorder = "border-transparent";
+            if (previewLower.includes("fatal error") || previewLower.includes("fail")) leftBorder = "border-[#f44747]";
+            else if (previewLower.includes("warning")) leftBorder = "border-[#d7ba7d]";
 
             return `
-        <div onclick="openConsole('${encodeURIComponent(JSON.stringify(log))}')" class="log-card p-2 mb-1 flex flex-col gap-1.5 fade-in ${stateObj.border}">
+        <div onclick="openConsole('${encodeURIComponent(JSON.stringify(log))}')" class="log-card p-3 rounded-md flex flex-col gap-2 border-l-2 ${leftBorder} fade-in">
             <div class="flex items-center gap-2">
-                <i data-lucide="${stateObj.icon}" class="w-3.5 h-3.5 ${stateObj.glow} shrink-0"></i>
-                <span class="text-xs font-mono truncate text-[#c9e0e5] font-semibold" title="${log.file}">${log.file}</span>
+                <i data-lucide="file-json" class="w-4 h-4 text-[#ce9178] shrink-0"></i>
+                <span class="text-sm font-medium text-[#c9d1d9] truncate" title="${log.file}">${log.file}</span>
             </div>
             
-            <div class="flex items-center justify-between text-[10px] font-tech text-[#4B798A]">
-                <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> VOL: ${formatBytes(log.size_bytes)}</span>
-                <span>${formatDate(log.modified)}</span>
+            <div class="flex items-center justify-between text-[11px] text-[#858585]">
+                <span class="flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> ${formatBytes(log.size_bytes)}</span>
+                <span>Últ. Mod: ${formatDate(log.modified)}</span>
             </div>
         </div>
     `;
@@ -540,6 +237,10 @@ function renderLogCards() {
     lucide.createIcons();
 }
 
+// ==========================================
+// VSCODE SYNTAX HIGHLIGHT ENGINE
+// (FUNDO PRETO, TEXTO COLORIDO EM PT-BR)
+// ==========================================
 const escapeHtml = unsafe =>
     unsafe
         .replace(/&/g, "&amp;")
@@ -552,27 +253,36 @@ function buildVscodeLine(lineRaw, lineNum) {
     if (!lineRaw.trim()) return "";
 
     let lower = lineRaw.toLowerCase();
+
+    // Extra classes just for the left border marker, NOT full background
     let rowClass = "log-line";
 
     if (lower.includes("fatal error") || lower.includes("uncaught error") || lower.includes("doesn't exist")) {
-        rowClass += " row-critical js-has-error";
+        rowClass += " row-critical";
     } else if (lower.includes("warning") || lower.includes("notice") || lower.includes("syntax error")) {
-        rowClass += " row-warning js-has-warning";
+        rowClass += " row-warning";
     } else if (lower.includes("mail") || lower.includes("smtp")) {
-        rowClass += lower.includes("fail") || lower.includes("error") ? " row-critical js-has-error" : " row-mail";
+        rowClass += lower.includes("fail") || lower.includes("error") ? " row-critical" : " row-mail";
     }
 
     let html = escapeHtml(lineRaw);
 
-    // Regex Colorers (No Background, just pure text color VSCode style)
+    // 1. Strings literais -> Laranja/Verde
     html = html.replace(/(&quot;.*?&quot;|&#039;.*?&#039;)/g, '<span class="hl-string">$1</span>');
+
+    // 2. Variáveis de PHP ($variavel) -> Azul claro
     html = html.replace(/(\$[A-Za-z0-9_]+)/g, '<span class="hl-var">$1</span>');
+
+    // 3. Timestamps [Data Hora] -> Cinza Muted
     html = html.replace(/(\[[0-9a-zA-Z :-]+(?:UTC|GMT|-0300|\\+0000)?\])/g, '<span class="hl-timestamp">$1</span>');
+
+    // 4. Arquivos/Paths no servidor (ex: /home/domain/public_html/index.php) -> Azul Link Escuro
     html = html.replace(
         /(\/home[A-Za-z0-9_.\/-]+\.php)\b/g,
         '<span class="hl-path" title="Acessar sub-diretório">$1</span>',
     );
 
+    // 5. Palavras chave reservadas e tradução indireta/marcadores
     const phpErrors = [
         { rgx: "PHP Warning:", class: "hl-warning" },
         { rgx: "PHP Fatal error:", class: "hl-error" },
@@ -586,6 +296,7 @@ function buildVscodeLine(lineRaw, lineNum) {
     ];
 
     for (let e of phpErrors) {
+        // Lookahead p garantir que n mexemos dentro do span ja pintado antes
         let rule = new RegExp(`(${e.rgx})(?![^<]*>|[^<>]*<\/span>)`, "gi");
         html = html.replace(rule, `<span class="${e.class}">$1</span>`);
     }
@@ -604,51 +315,26 @@ function openConsole(logStrEnc) {
         DOM.consoleEmpty.style.display = "none";
         DOM.consoleActive.style.display = "flex";
 
-        DOM.consoleTitle.innerHTML = `<span class="opacity-30">READ //</span> ${log.file}`;
+        DOM.consoleTitle.textContent = log.file;
 
+        // Faz o Parse Line by Line
         let finalHtml = "";
-        let hasErrors = false;
-
         if (log.preview) {
-            const lines = log.preview.split("\n");
+            const lines = log.preview.split("\\n");
             let idx = 1;
             for (let ln of lines) {
                 const parsedLine = buildVscodeLine(ln, idx);
                 if (parsedLine) {
                     finalHtml += parsedLine;
-                    if (parsedLine.includes("js-has-error")) hasErrors = true;
                     idx++;
                 }
             }
         }
 
         DOM.consoleBody.innerHTML =
-            finalHtml || '<div class="px-4 py-2 font-tech text-[var(--neon-cyan)] italic">SYS: BUFFER EMPTY</div>';
-
-        const actionsBar = document.getElementById("console-actions");
-        if (hasErrors) {
-            actionsBar.innerHTML = `
-                <button onclick="scrollToError()" class="p-1 px-3 bg-[var(--neon-red)]/10 border border-[var(--neon-red)] text-xs font-tech text-[var(--neon-red)] rounded flex items-center gap-1 hover:bg-[var(--neon-red)] hover:text-black transition-all">
-                    <i data-lucide="crosshair" class="w-3 h-3"></i> JUMP TO ERROR
-                </button>
-            `;
-        } else {
-            actionsBar.innerHTML = `<span class="text-xs font-tech text-[var(--neon-cyan)] opacity-60">NO CRITICAL TRIGGERS</span>`;
-        }
-        lucide.createIcons();
+            finalHtml || '<div class="px-4 py-2 text-vs-muted italic">Arquivo lido é infinito ou está vazio.</div>';
     } catch (e) {
         console.error("Erro ao abrir log", e);
-    }
-}
-
-function scrollToError() {
-    const errorLine = document.querySelector(".js-has-error");
-    if (errorLine) {
-        errorLine.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-            errorLine.style.backgroundColor = "rgba(255,0,0,0.3)";
-            setTimeout(() => (errorLine.style.backgroundColor = ""), 500);
-        }, 300);
     }
 }
 
@@ -658,8 +344,8 @@ function closeConsole() {
     DOM.consoleBody.innerHTML = "";
 }
 
+// Expõe globals pro HTML caso necessario
 window.selectProject = selectProject;
 window.loadLogsFromApi = loadLogsFromApi;
 window.openConsole = openConsole;
 window.closeConsole = closeConsole;
-window.scrollToError = scrollToError;
