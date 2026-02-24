@@ -10,7 +10,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYS LOGS // HUD</title>
+    <title>SYS LOGS // HUD GLOBAL</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,9 +19,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             theme: {
                 extend: {
                     colors: {
-                        vs: {
-                            dim: '#3a6875',
-                        }
+                        vs: { dim: '#3a6875', }
                     }
                 }
             }
@@ -46,7 +44,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                 <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> SYNCING...
             </div>
             
-            <button onclick="window.loadLogsFromApi()" class="text-[var(--text-dim)] hover:text-[var(--neon-cyan)] transition-colors p-2" title="Force Sync">
+            <button onclick="window.loadLogsFromApi?.()" class="text-[var(--text-dim)] hover:text-[var(--neon-cyan)] transition-colors p-2" title="Force Sync">
                 <i data-lucide="refresh-ccw" class="w-4 h-4"></i>
             </button>
             
@@ -65,24 +63,71 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         
         <!-- SIDEBAR PROJETOS -->
         <aside class="w-64 border-r border-[var(--panel-border)] flex flex-col shrink-0 z-10 bg-[var(--bg-dark)]/80 relative">
-            <div class="px-5 py-4 text-xs font-bold text-[var(--text-dim)] uppercase tracking-widest border-b border-[var(--panel-border)]">
-                TARGETS
+            <div class="px-5 py-4 text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest border-b border-[var(--panel-border)]">
+                CONNECTION TARGETS
             </div>
             <nav class="flex-1 overflow-y-auto p-2 space-y-1" id="project-list"></nav>
         </aside>
 
         <!-- MAIN TERMINAL -->
-        <main class="flex-1 flex flex-col relative min-w-0">
+        <main class="flex-1 flex flex-col relative min-w-0 bg-[var(--bg-dark)]">
             
-            <div id="view-empty" class="absolute inset-0 flex flex-col items-center justify-center z-20">
-                <div class="hud-panel p-8 flex flex-col items-center text-center max-w-md fade-in">
-                    <i data-lucide="cpu" class="w-20 h-20 text-[var(--text-dim)] mb-6 opacity-50 pulse-glow"></i>
-                    <h2 class="text-2xl font-tech text-[var(--neon-cyan)] mb-2 tracking-widest glitch-text">SYSTEM STANDBY</h2>
-                    <p class="text-sm text-[var(--text-dim)] uppercase font-tech">Aguardando seleção de alvo para inicializar a inspeção de pacotes e logs corrompidos.</p>
+            <!-- GLOBAL DASHBOARD (Nova Tela Inicial) -->
+            <div id="view-global-dashboard" class="hidden absolute inset-0 flex-col overflow-y-auto z-20 p-6 md:p-10 fade-in w-full h-full">
+                
+                <div class="max-w-7xl mx-auto w-full">
+                    
+                    <div class="flex items-end justify-between border-b border-[var(--panel-border)] pb-4 mb-8">
+                        <div>
+                            <h2 class="text-3xl font-tech text-[var(--neon-cyan)] tracking-widest uppercase glitch-text mb-1">GLOBAL OVERVIEW</h2>
+                            <p class="text-xs font-tech text-[var(--text-dim)] uppercase tracking-widest">Monitoramento simultâneo de todos os Nodes do Servidor</p>
+                        </div>
+                        <div class="text-right flex items-center gap-6">
+                            <div class="flex flex-col items-end">
+                                <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-1">Total Files</span>
+                                <span class="text-2xl font-tech text-white leading-none" id="m-stat-files">0</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-1">Volumetria</span>
+                                <span class="text-2xl font-tech text-white leading-none" id="m-stat-size">0 B</span>
+                            </div>
+                            <div class="flex flex-col items-end border-l border-[var(--neon-red)]/50 pl-6">
+                                <span class="text-[10px] text-[var(--neon-red)] font-tech uppercase mb-1">Global Exceptions</span>
+                                <span class="text-3xl font-tech text-[var(--neon-red)] leading-none text-shadow-red" id="m-stat-errs">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest mb-4">SYSTEM GRID LAYER</h3>
+                    
+                    <!-- Aqui os cards globais entram dinamicamente -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-10" id="global-grid-projects">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Toolkit / Ferramentas Inferiores -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="hud-panel p-5 box-border hover:border-[var(--neon-cyan)] transition-colors cursor-pointer group">
+                            <i data-lucide="shield-alert" class="w-6 h-6 text-[var(--neon-orange)] mb-3 group-hover:scale-110 transition-transform"></i>
+                            <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Automated Rules</h4>
+                            <p class="text-xs font-tech text-[var(--text-dim)]">Configuração inativa de deleção automatica de logs antigos.</p>
+                        </div>
+                        <div class="hud-panel p-5 box-border hover:border-[var(--neon-cyan)] transition-colors cursor-pointer group">
+                            <i data-lucide="cpu" class="w-6 h-6 text-[var(--neon-cyan)] mb-3 group-hover:scale-110 transition-transform"></i>
+                            <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Engine Diagnostics</h4>
+                            <p class="text-xs font-tech text-[var(--text-dim)]">Visualizar saúde dos serviços (MySQL, Nginx, PHP-FPM) base.</p>
+                        </div>
+                        <div onclick="window.loadGlobalDashboardData?.()" class="hud-panel p-5 box-border border border-[var(--panel-border)] hover:border-[var(--neon-green)] transition-all cursor-pointer group bg-[var(--neon-green)]/5">
+                            <i data-lucide="refresh-cw" class="w-6 h-6 text-[var(--neon-green)] mb-3 group-hover:animate-spin"></i>
+                            <h4 class="font-tech text-sm text-[var(--text-main)] uppercase tracking-widest mb-2">Force Re-Sync</h4>
+                            <p class="text-xs font-tech text-[var(--text-dim)]">Varrer os diretórios do Linux forçando re-leitura bruta agora.</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- Dashboard Activo -->
+            <!-- INDIVIDUAL PROJECT VIEW -->
             <div id="view-project" class="hidden flex-col h-full z-10 w-full relative">
                 
                 <!-- HUD Tabs -->
@@ -109,7 +154,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                             
                             <!-- Left: Health Status Big UI -->
                             <div class="hud-panel p-8 w-full lg:w-1/3 flex flex-col items-center justify-center shrink-0">
-                                <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest w-full text-center border-b border-[var(--panel-border)] pb-2 mb-8">SYSTEM HEALTH</h3>
+                                <h3 class="text-xs text-[var(--text-dim)] uppercase font-tech tracking-widest w-full text-center border-b border-[var(--panel-border)] pb-2 mb-8">NODE HEALTH</h3>
                                 
                                 <div class="relative flex items-center justify-center mb-6">
                                     <div id="health-ring" class="w-32 h-32 rounded-full border-4 flex items-center justify-center border-[var(--text-dim)] transition-all duration-700">
@@ -131,7 +176,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                                 
                                 <div class="hud-panel p-5 flex flex-col h-32">
                                     <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-auto opacity-80 flex items-center gap-2">
-                                        <i data-lucide="database" class="w-3 h-3 text-[var(--neon-cyan)]"></i> LOG NODES
+                                        <i data-lucide="database" class="w-3 h-3 text-[var(--neon-cyan)]"></i> LOCAL FILES
                                     </span>
                                     <div class="text-4xl font-tech font-normal text-[var(--text-main)]" id="stat-total-logs">0</div>
                                 </div>
@@ -145,7 +190,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
                                 <div class="hud-panel p-5 flex flex-col h-32 border-l-2 border-[var(--neon-red)]">
                                     <span class="text-[10px] text-[var(--text-dim)] font-tech uppercase mb-auto opacity-80 flex items-center gap-2">
-                                        <i data-lucide="alert-triangle" class="w-3 h-3 text-[var(--neon-red)]"></i> CRITICAL EXCEPTION
+                                        <i data-lucide="alert-triangle" class="w-3 h-3 text-[var(--neon-red)]"></i> NODE EXCEPTIONS
                                     </span>
                                     <div class="text-4xl font-tech font-bold text-[var(--neon-red)]" id="stat-errors">0</div>
                                 </div>
@@ -174,8 +219,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                         <!-- Col 1: Files -->
                         <div class="w-full md:w-80 border-r border-[var(--panel-border)] bg-[var(--panel-bg)] flex flex-col shrink-0 flex-none gap-2 px-2 py-3">
                             <div class="relative w-full mb-1">
-                                <i data-lucide="search" class="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--neon-cyan)]"></i>
-                                <input type="text" id="search-input" placeholder="Query Node..." class="w-full bg-[rgba(0,0,0,0.5)] border border-[var(--panel-border)] text-[11px] font-tech text-[var(--text-main)] pl-8 pr-3 py-2 outline-none focus:border-[var(--neon-cyan)] focus:shadow-[0_0_8px_rgba(0,240,255,0.2)] transition-all uppercase placeholder-[var(--text-dim)]">
+                                <i data-lucide="search" class="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]"></i>
+                                <!-- Correção da Cor Branca Aplicada AQUI. Background Preto com opacidade e fonte tech -->
+                                <input type="text" id="search-input" placeholder="Query Node..." class="w-full bg-black/40 border border-[var(--panel-border)] text-xs font-tech text-[var(--text-main)] pl-8 pr-3 py-2 outline-none focus:border-[var(--neon-cyan)] focus:shadow-[0_0_8px_rgba(0,240,255,0.2)] transition-all uppercase placeholder-[var(--text-dim)]">
                             </div>
                             <div class="flex-1 overflow-y-auto pr-1 space-y-px" id="logs-container"></div>
                         </div>
@@ -197,7 +243,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                                     </div>
                                     
                                     <div class="flex items-center gap-4">
-                                        <!-- Actions Container gerado no app.js -->
                                         <div id="console-actions"></div>
                                         
                                         <button onclick="window.closeConsole()" class="p-1 text-[var(--text-dim)] hover:text-[var(--neon-cyan)] transition-colors">
@@ -220,7 +265,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         </main>
     </div>
 
-    <!-- Scripts -->
     <script src="assets/js/app.js"></script>
 
 </body>

@@ -1,13 +1,12 @@
 // assets/js/app.js
 
-document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
-    initApp();
-});
+// Previne execução prematura e referências nulas transferindo DOM bindings p/ dento do onload
+let DOM = {};
 
 const state = {
     currentProject: null,
     logs: [],
+    // Adicionamos info para saber onde puxar se for global dashboard
     projects: [
         { id: "all", name: "OVERVIEW / TODOS" },
         { id: "protocolosead_com", name: "SYS • PROTOCOLO SEAD" },
@@ -23,40 +22,46 @@ const state = {
     activeTab: "logs",
 };
 
-const DOM = {
-    projectList: document.getElementById("project-list"),
-    logsContainer: document.getElementById("logs-container"),
-    projectTitle: document.getElementById("current-project-title"),
+document.addEventListener("DOMContentLoaded", () => {
+    DOM = {
+        projectList: document.getElementById("project-list"),
+        logsContainer: document.getElementById("logs-container"),
+        projectTitle: document.getElementById("current-project-title"),
 
-    // Tabs
-    tabBtnDashboard: document.getElementById("tab-btn-dashboard"),
-    tabBtnLogs: document.getElementById("tab-btn-logs"),
+        // Tabs
+        tabBtnDashboard: document.getElementById("tab-btn-dashboard"),
+        tabBtnLogs: document.getElementById("tab-btn-logs"),
 
-    // Views
-    viewEmpty: document.getElementById("view-empty"),
-    viewProject: document.getElementById("view-project"),
-    tabContentDashboard: document.getElementById("tab-content-dashboard"),
-    tabContentLogs: document.getElementById("tab-content-logs"),
+        // Views Principais
+        viewGlobalDashboard: document.getElementById("view-global-dashboard"), // Nova view de todos projetos
+        viewProject: document.getElementById("view-project"),
 
-    // Console
-    searchInput: document.getElementById("search-input"),
-    consoleEmpty: document.getElementById("console-empty"),
-    consoleActive: document.getElementById("console-active"),
-    consoleTitle: document.getElementById("console-title"),
-    consoleBody: document.getElementById("console-body"),
+        tabContentDashboard: document.getElementById("tab-content-dashboard"),
+        tabContentLogs: document.getElementById("tab-content-logs"),
 
-    // Health e HUD Stats
-    statTotalLogs: document.getElementById("stat-total-logs"),
-    statTotalSize: document.getElementById("stat-total-size"),
-    statErrors: document.getElementById("stat-errors"),
-    statWarns: document.getElementById("stat-warns"),
+        // Console Core
+        searchInput: document.getElementById("search-input"),
+        consoleEmpty: document.getElementById("console-empty"),
+        consoleActive: document.getElementById("console-active"),
+        consoleTitle: document.getElementById("console-title"),
+        consoleBody: document.getElementById("console-body"),
 
-    healthScore: document.getElementById("health-score"),
-    healthStatus: document.getElementById("health-status"),
-    healthRing: document.getElementById("health-ring"),
+        // Projetos Estatisticas
+        statTotalLogs: document.getElementById("stat-total-logs"),
+        statTotalSize: document.getElementById("stat-total-size"),
+        statErrors: document.getElementById("stat-errors"),
+        statWarns: document.getElementById("stat-warns"),
 
-    spinner: document.getElementById("global-spinner"),
-};
+        healthScore: document.getElementById("health-score"),
+        healthStatus: document.getElementById("health-status"),
+        healthRing: document.getElementById("health-ring"),
+
+        spinner: document.getElementById("global-spinner"),
+    };
+
+    lucide.createIcons();
+    initApp();
+});
 
 // Utils
 const formatBytes = bytes => {
@@ -83,9 +88,13 @@ const formatDate = dateString => {
 function initApp() {
     renderProjectsSidebar();
 
+    // Liga botoes
     DOM.tabBtnDashboard.addEventListener("click", () => switchTab("dashboard"));
     DOM.tabBtnLogs.addEventListener("click", () => switchTab("logs"));
     DOM.searchInput.addEventListener("input", () => setTimeout(renderLogCards, 300));
+
+    // Força inicio na tab OVERVIEW / TODOS (id: 'all')
+    selectProject("all");
 }
 
 function renderProjectsSidebar() {
@@ -118,16 +127,24 @@ function selectProject(projectId) {
     state.currentProject = projectId;
     const proj = state.projects.find(p => p.id === projectId);
 
-    DOM.projectTitle.innerHTML = `<span class="opacity-50">TARGET:</span> ${proj ? proj.name : ""}`;
-
-    DOM.viewEmpty.style.display = "none";
-    DOM.viewProject.style.display = "flex";
-
-    closeConsole();
     renderProjectsSidebar();
 
-    switchTab("dashboard");
-    loadLogsFromApi();
+    // Se a aba for OVERVIEW MASTER
+    if (projectId === "all") {
+        DOM.viewProject.style.display = "none";
+        DOM.viewGlobalDashboard.style.display = "flex";
+        loadGlobalDashboardData();
+    } else {
+        // Aba Individual
+        DOM.viewGlobalDashboard.style.display = "none";
+        DOM.viewProject.style.display = "flex";
+
+        DOM.projectTitle.innerHTML = `<span class="opacity-50">TARGET:</span> ${proj ? proj.name : ""}`;
+        closeConsole();
+        switchTab("dashboard"); // Volta pra tab de Dashboard local do Projeto
+
+        loadLogsFromApi(); // Fetch pra um só
+    }
 }
 
 function switchTab(tabId) {
@@ -141,10 +158,147 @@ function switchTab(tabId) {
 }
 
 // ==========================================
-// API FETCH & CYBER DASHBOARD STATS
+// NOVA FUNCIONALIDADE: DASHBOARD GLOBAL
+// Extrai os stats do servidor massivo
+// ==========================================
+async function loadGlobalDashboardData() {
+    DOM.spinner.style.display = "flex";
+    const globalGrid = document.getElementById("global-grid-projects");
+    globalGrid.innerHTML = `
+        <div class="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 hud-panel h-48 flex items-center justify-center font-tech text-[var(--neon-cyan)] opacity-50 pulse-glow">
+            ANALISANDO TODOS OS NODES... aguarde
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`api/logs.php?project=all`);
+        const data = await response.json();
+
+        if (data.data) {
+            // Conta incidentes massivos
+            let globalErrors = 0;
+            let globCount = data.data.length;
+            let globSize = data.data.reduce((a, b) => a + b.size_bytes, 0);
+
+            // Agrupar logs por seus prováveis projetos originais usando nomes
+            const projectMap = {};
+
+            // Inicia zerado os blocos para só exibir targets validos reais do array base state
+            state.projects.forEach(p => {
+                if (p.id !== "all") projectMap[p.id] = { logs: [], err: 0, w: 0, latest: null };
+            });
+
+            data.data.forEach(log => {
+                const lowerPrev = (log.preview || "").toLowerCase();
+                let e = 0,
+                    w = 0;
+
+                if (
+                    lowerPrev.includes("fatal error") ||
+                    lowerPrev.includes("uncaught") ||
+                    lowerPrev.includes("doesn't exist") ||
+                    lowerPrev.includes("fail")
+                )
+                    e++;
+                if (lowerPrev.includes("warning") || lowerPrev.includes("notice")) w++;
+                globalErrors += e;
+
+                // Tenta achar de quem e o log pra separar em caixinhas na Global
+                let targetId = "unknown";
+                for (let i = 1; i < state.projects.length; i++) {
+                    const p = state.projects[i];
+                    // O filtro cru da search (ex protocolosead_com na api)
+                    const searchStr = p.id;
+                    if (log.file.includes(searchStr)) {
+                        targetId = p.id;
+                        break;
+                    }
+                }
+
+                // Se o arquivo contem o nome de um dos projetos mapeamos p ele
+                if (targetId !== "unknown" && projectMap[targetId]) {
+                    projectMap[targetId].logs.push(log);
+                    projectMap[targetId].err += e;
+                    projectMap[targetId].w += w;
+                    // Salvar o modificado mais recente
+                    if (
+                        !projectMap[targetId].latest ||
+                        new Date(log.modified) > new Date(projectMap[targetId].latest)
+                    ) {
+                        projectMap[targetId].latest = log.modified;
+                    }
+                }
+            });
+
+            // Atualiza Top Stats Globais
+            document.getElementById("m-stat-files").textContent = globCount;
+            document.getElementById("m-stat-size").textContent = formatBytes(globSize);
+            document.getElementById("m-stat-errs").textContent = globalErrors;
+
+            // Renderiza Grid Pessoal por projeto
+            let gridHtml = "";
+            for (let i = 1; i < state.projects.length; i++) {
+                const p = state.projects[i];
+                const mapData = projectMap[p.id];
+                const isEmpty = mapData.logs.length === 0;
+
+                let boxBorder = "border-transparent";
+                let iconClass = "text-[var(--text-dim)]";
+                let statusMsg = "SECURE / ONLINE";
+
+                if (!isEmpty) {
+                    if (mapData.err > 0) {
+                        boxBorder = "border-t-2 border-t-[var(--neon-red)] bg-red-950/20";
+                        iconClass = "text-[var(--neon-red)] pulse-glow-red";
+                        statusMsg = `${mapData.err} CRITICAL(S)`;
+                    } else if (mapData.w > 0) {
+                        boxBorder = "border-t-[var(--neon-orange)]";
+                        iconClass = "text-[var(--neon-orange)]";
+                        statusMsg = `${mapData.w} WARNING(S)`;
+                    } else {
+                        boxBorder = "border-t-[var(--neon-cyan)]";
+                        iconClass = "text-[var(--neon-cyan)]";
+                    }
+                } else {
+                    statusMsg = "OFFLINE / EMPTY";
+                }
+
+                gridHtml += `
+                    <div class="hud-panel p-4 flex flex-col hover:bg-[var(--text-dim)]/10 transition-colors cursor-pointer ${boxBorder}" onclick="selectProject('${p.id}')">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-tech font-bold text-[#d3ebed] tracking-widest">${p.name}</span>
+                            <i data-lucide="${p.id.includes("DB") ? "database" : "server"}" class="w-4 h-4 ${iconClass}"></i>
+                        </div>
+                        
+                        <div class="text-[10px] font-tech text-[var(--text-dim)] mb-1 uppercase">FILES TRACKED: <span class="text-white">${mapData.logs.length}</span></div>
+                        <div class="text-[10px] font-tech text-[var(--text-dim)] mb-4 uppercase">LAST UPDATE: <span class="text-white">${mapData.latest ? formatDate(mapData.latest) : "N/A"}</span></div>
+                        
+                        <div class="mt-auto flex items-center gap-2 pt-3 border-t border-[var(--panel-border)] border-dashed">
+                            <i data-lucide="${mapData.err > 0 ? "shield-alert" : "shield-check"}" class="w-3 h-3 ${iconClass}"></i>
+                            <span class="text-xs font-tech ${mapData.err > 0 ? "text-[var(--neon-red)]" : "text-[var(--text-dim)]"} uppercase tracking-widest">${statusMsg}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            globalGrid.innerHTML = gridHtml;
+            lucide.createIcons();
+        } else {
+            globalGrid.innerHTML = `<div>Erro na extração global: ${data.error}</div>`;
+        }
+    } catch (error) {
+        console.error(error);
+        globalGrid.innerHTML = `<div class="text-[var(--neon-red)]">Global Network Failure.</div>`;
+    } finally {
+        DOM.spinner.style.display = "none";
+    }
+}
+
+// ==========================================
+// API FETCH INDIVIDUAL (TABS DO PROJETO)
 // ==========================================
 async function loadLogsFromApi() {
-    if (!state.currentProject) return;
+    if (!state.currentProject || state.currentProject === "all") return;
 
     DOM.spinner.style.display = "flex";
     DOM.logsContainer.innerHTML =
@@ -170,6 +324,7 @@ async function loadLogsFromApi() {
 }
 
 function animateValue(obj, start, end, duration) {
+    if (!obj) return;
     let startTimestamp = null;
     const step = timestamp => {
         if (!startTimestamp) startTimestamp = timestamp;
@@ -183,6 +338,7 @@ function animateValue(obj, start, end, duration) {
 }
 
 function updateDashboardStats() {
+    if (!DOM.statTotalLogs) return; // safety
     DOM.statTotalLogs.textContent = state.logs.length;
 
     const totalBytes = state.logs.reduce((acc, log) => acc + log.size_bytes, 0);
@@ -193,7 +349,6 @@ function updateDashboardStats() {
 
     state.logs.forEach(log => {
         const lower = (log.preview || "").toLowerCase();
-        // Contagem rudimentar mas efetiva pros cards
         if (
             lower.includes("fatal error") ||
             lower.includes("uncaught error") ||
@@ -207,19 +362,16 @@ function updateDashboardStats() {
     DOM.statErrors.textContent = totalE;
     DOM.statWarns.textContent = totalW;
 
-    // ===================================
-    // SYSTEM HEALTH ALGORITHM (eDEX-UI TYPE)
-    // ===================================
+    // System Health Core
     let score = 100;
-    score -= totalE * 15; // Erros sangram muito o score
-    score -= totalW * 3; // Warnings dão pequenas beliscadas
+    score -= totalE * 15;
+    score -= totalW * 3;
     if (score < 0) score = 0;
-    if (state.logs.length === 0) score = 100; // se ta vazio ta limpo
+    if (state.logs.length === 0) score = 100;
 
     DOM.healthScore.textContent = `${score}%`;
     animateValue(DOM.healthScore, 0, score, 800);
 
-    // Aplicação das cores e status Hacker
     let statusTxt = "INTEGRITY: STABLE";
     let ringColor = "var(--neon-cyan)";
     DOM.healthRing.className = "w-32 h-32 rounded-full border-4 flex items-center justify-center pulse-glow";
@@ -244,7 +396,7 @@ function updateDashboardStats() {
 }
 
 // ==========================================
-// RENDERIZAÇÃO DE LISTA DE LOGS E CONSOLE
+// RENDER CONSOLE (VSCODE ESTILO LIMPO) No Fundo Branco corrigido para negro
 // ==========================================
 function renderLogCards() {
     let filtered = [...state.logs];
@@ -265,7 +417,6 @@ function renderLogCards() {
     DOM.logsContainer.innerHTML = filtered
         .map(log => {
             const previewLower = log.preview.toLowerCase();
-
             let stateObj = { icon: "file-json", border: "", glow: "" };
 
             if (
@@ -311,10 +462,6 @@ function renderLogCards() {
     lucide.createIcons();
 }
 
-// ==========================================
-// VSCODE SYNTAX HIGHLIGHT ENGINE
-// (FUNDO PRETO, TEXTO COLORIDO EM PT-BR)
-// ==========================================
 const escapeHtml = unsafe =>
     unsafe
         .replace(/&/g, "&amp;")
@@ -339,22 +486,15 @@ function buildVscodeLine(lineRaw, lineNum) {
 
     let html = escapeHtml(lineRaw);
 
-    // 1. Strings literais
+    // Regex Colorers (No Background, just pure text color VSCode style)
     html = html.replace(/(&quot;.*?&quot;|&#039;.*?&#039;)/g, '<span class="hl-string">$1</span>');
-
-    // 2. Variáveis de PHP ($variavel)
     html = html.replace(/(\$[A-Za-z0-9_]+)/g, '<span class="hl-var">$1</span>');
-
-    // 3. Timestamps [Data Hora]
     html = html.replace(/(\[[0-9a-zA-Z :-]+(?:UTC|GMT|-0300|\\+0000)?\])/g, '<span class="hl-timestamp">$1</span>');
-
-    // 4. Arquivos/Paths no servidor (ex: /home/domain/public_html/index.php)
     html = html.replace(
         /(\/home[A-Za-z0-9_.\/-]+\.php)\b/g,
         '<span class="hl-path" title="Acessar sub-diretório">$1</span>',
     );
 
-    // 5. Palavras chave reservadas e tradução indireta/marcadores
     const phpErrors = [
         { rgx: "PHP Warning:", class: "hl-warning" },
         { rgx: "PHP Fatal error:", class: "hl-error" },
@@ -407,7 +547,6 @@ function openConsole(logStrEnc) {
         DOM.consoleBody.innerHTML =
             finalHtml || '<div class="px-4 py-2 font-tech text-[var(--neon-cyan)] italic">SYS: BUFFER EMPTY</div>';
 
-        // Função moderna pedida pelo usuario: auto-scroll pra erro rapido!
         const actionsBar = document.getElementById("console-actions");
         if (hasErrors) {
             actionsBar.innerHTML = `
@@ -428,7 +567,6 @@ function scrollToError() {
     const errorLine = document.querySelector(".js-has-error");
     if (errorLine) {
         errorLine.scrollIntoView({ behavior: "smooth", block: "center" });
-        // Efeito de piscar sutil pra ver onde parou
         setTimeout(() => {
             errorLine.style.backgroundColor = "rgba(255,0,0,0.3)";
             setTimeout(() => (errorLine.style.backgroundColor = ""), 500);
