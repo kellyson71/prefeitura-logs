@@ -4,6 +4,28 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Location: index.php');
     exit;
 }
+
+// Carrega status.json gerado pelo monitor.php
+$statusFile = __DIR__ . '/logs/status.json';
+$monitorData = [];
+$alertsThisMonth = 0;
+if (file_exists($statusFile)) {
+    $monitorData = json_decode(file_get_contents($statusFile), true) ?? [];
+}
+
+// Conta alertas do mês
+$alertLog = __DIR__ . '/logs/alerts_' . date('Y-m') . '.log';
+if (file_exists($alertLog)) {
+    $alertsThisMonth = substr_count(file_get_contents($alertLog), 'ALERTA_ENVIADO');
+}
+
+// Últimos deploys do guard.sh
+$deployLog = dirname(__DIR__) . '/_infra/logs/deploys_' . date('Y-m') . '.log';
+$recentDeploys = [];
+if (file_exists($deployLog)) {
+    $lines = array_filter(array_map('trim', file($deployLog)));
+    $recentDeploys = array_slice(array_reverse(array_values($lines)), 0, 20);
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -51,10 +73,28 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         </div>
 
         <div class="flex items-center gap-4">
+            <!-- Badge de alertas do mês -->
+            <?php if ($alertsThisMonth > 0): ?>
+            <div class="flex items-center gap-1.5 bg-red-900/40 border border-red-700/50 rounded-lg px-2.5 py-1 text-xs font-medium text-red-400">
+                <i data-lucide="bell-ring" class="w-3.5 h-3.5"></i>
+                <?= $alertsThisMonth ?> alerta<?= $alertsThisMonth > 1 ? 's' : '' ?> este mês
+            </div>
+            <?php endif; ?>
+
+            <!-- Status rápido dos domínios -->
+            <?php if (!empty($monitorData['domains'])): ?>
+            <div class="flex items-center gap-1.5" title="Status dos domínios">
+                <?php foreach ($monitorData['domains'] as $id => $d): ?>
+                    <div class="w-2 h-2 rounded-full <?= $d['ok'] ? 'bg-green-400' : 'bg-red-500 animate-pulse' ?>"
+                         title="<?= htmlspecialchars($d['name']) ?>: <?= $d['ok'] ? 'OK' : 'FORA DO AR' ?>"></div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
             <div id="global-spinner" class="hidden items-center gap-2 text-xs font-medium text-vs-muted">
                 <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-vs-blue"></i> Lendo disco...
             </div>
-            
+
             <div class="h-6 w-px bg-vs-border"></div>
 
             <button onclick="window.loadLogsFromApi()" class="text-vs-muted hover:text-vs-text transition-colors p-1.5 rounded-md hover:bg-[#37373d]" title="Sincronizar">
@@ -74,7 +114,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
     <div class="flex-1 flex overflow-hidden">
         
-        <!-- Sidebar Esquerda (Projetos) -->
+        <!-- Sidebar Esquerda (Projetos + Monitor) -->
         <aside class="w-64 bg-vs-sidebar border-r border-vs-border flex flex-col shrink-0 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.2)]">
             <div class="px-4 py-3 text-xs font-bold text-vs-muted uppercase tracking-wider flex items-center gap-2">
                 <i data-lucide="briefcase" class="w-3.5 h-3.5"></i> PROJETOS
@@ -82,6 +122,27 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             <nav class="flex-1 overflow-y-auto pt-1 space-y-[1px]" id="project-list">
                 <!-- Javascript Renders Projects Here -->
             </nav>
+
+            <!-- Monitor de Uptime -->
+            <?php if (!empty($monitorData['domains'])): ?>
+            <div class="border-t border-vs-border shrink-0">
+                <div class="px-4 py-2 text-xs font-bold text-vs-muted uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> UPTIME
+                    <?php if ($monitorData['updated'] ?? false): ?>
+                    <span class="text-[10px] font-normal ml-auto opacity-60"><?= date('H:i', strtotime($monitorData['updated'])) ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="px-2 pb-3 space-y-1">
+                    <?php foreach ($monitorData['domains'] as $id => $d): ?>
+                    <div class="flex items-center gap-2 px-2 py-1 rounded-md text-xs <?= $d['ok'] ? 'text-vs-muted' : 'bg-red-900/30 text-red-400' ?>">
+                        <div class="w-1.5 h-1.5 rounded-full shrink-0 <?= $d['ok'] ? 'bg-green-400' : 'bg-red-500 animate-pulse' ?>"></div>
+                        <span class="truncate flex-1" title="<?= htmlspecialchars($d['name']) ?>"><?= htmlspecialchars($d['name']) ?></span>
+                        <span class="font-mono text-[10px] opacity-70"><?= $d['latency'] ?>ms</span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </aside>
 
         <!-- Main Content Central -->
@@ -175,6 +236,59 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                                     Vá até a aba de <strong class="text-vs-text">Detalhamento</strong> para ler as falhas em formatação de depurador (foco nos logs mais recentes) e utilizar filtros de Isolamentos (Ver apenas Erros / Apenas Avisos) instantâneos para agilizar a investigação.
                                 </div>
                             </div>
+
+                            <!-- Histórico de Deploys do Guard -->
+                            <?php if (!empty($recentDeploys)): ?>
+                            <div class="mt-6">
+                                <h3 class="text-sm font-semibold text-vs-text mb-3 flex items-center gap-2">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4 text-vs-blue"></i>
+                                    Últimos Deploys (guard.sh)
+                                </h3>
+                                <div class="bg-vs-panel border border-vs-border rounded-xl overflow-hidden">
+                                    <table class="w-full text-xs font-mono">
+                                        <thead>
+                                            <tr class="border-b border-vs-border text-vs-muted">
+                                                <th class="text-left px-4 py-2 font-medium">Timestamp</th>
+                                                <th class="text-left px-4 py-2 font-medium">Projeto</th>
+                                                <th class="text-left px-4 py-2 font-medium">Arquivo</th>
+                                                <th class="text-left px-4 py-2 font-medium">Keywords</th>
+                                                <th class="text-left px-4 py-2 font-medium">Diff</th>
+                                                <th class="text-left px-4 py-2 font-medium">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php foreach ($recentDeploys as $line):
+                                            $parts = [];
+                                            preg_match('/^(.+?) \| projeto=(\S+) \| arquivo=(\S+) \| hash=(\S+) \| keywords=(\S+) \| diff=(\S+) \| status=(\S+)/', $line, $parts);
+                                            if (count($parts) < 8) continue;
+                                            [, $ts, $proj, $arq, $hash, $kw, $diff, $status] = $parts;
+                                            $statusClass = match(true) {
+                                                str_contains($status, 'CANCELADO') => 'text-yellow-400',
+                                                $status === 'ENVIADO'              => 'text-green-400',
+                                                str_contains($status, 'SESSAO')    => 'text-vs-blue',
+                                                default                            => 'text-vs-muted',
+                                            };
+                                            $kwClass = match($kw) {
+                                                'OK'      => 'text-green-400',
+                                                'FAIL'    => 'text-red-400',
+                                                'FORÇADO' => 'text-yellow-400',
+                                                default   => 'text-vs-muted',
+                                            };
+                                        ?>
+                                        <tr class="border-b border-vs-border/30 hover:bg-white/5">
+                                            <td class="px-4 py-1.5 text-vs-muted"><?= htmlspecialchars($ts) ?></td>
+                                            <td class="px-4 py-1.5 text-vs-blue font-semibold"><?= htmlspecialchars($proj) ?></td>
+                                            <td class="px-4 py-1.5 text-vs-text"><?= htmlspecialchars($arq) ?></td>
+                                            <td class="px-4 py-1.5 <?= $kwClass ?>"><?= htmlspecialchars($kw) ?></td>
+                                            <td class="px-4 py-1.5 text-vs-muted"><?= htmlspecialchars($diff) ?></td>
+                                            <td class="px-4 py-1.5 <?= $statusClass ?> font-semibold"><?= htmlspecialchars($status) ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <?php endif; ?>
 
                         </div>
                     </div>
